@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14061f">
+<title>Spell My Name</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14061f;--pink:#ff4fd8;--purple:#8b5cf6;--amber:#ffb84d;--glow:#c084fc;--muted:#cdbcf5;--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;touch-action:manipulation}
+body{font-family:'Baloo 2',system-ui,sans-serif;color:#fff;background:var(--bg);display:flex;align-items:center;justify-content:center;
+  padding:16px;user-select:none;-webkit-user-select:none}
+/* floating background blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(60px);opacity:.55;z-index:-1;animation:float 14s ease-in-out infinite alternate}
+.b1{width:320px;height:320px;background:#7c1fd1;top:-80px;left:-90px}
+.b2{width:280px;height:280px;background:#d6249f;bottom:-70px;right:-80px;animation-delay:-5s}
+.b3{width:200px;height:200px;background:#3b2dbd;top:45%;left:60%;animation-delay:-9s}
+@keyframes float{to{transform:translate(40px,-50px) scale(1.15)}}
+
+.card{width:100%;max-width:420px;background:var(--glass);border:1px solid var(--line);border-radius:28px;padding:26px 18px 22px;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.screen{text-align:center;display:none;flex-direction:column;align-items:center;gap:14px}
+.screen.on{display:flex;animation:in .45s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(14px)}}
+h1{font-size:34px;line-height:1.05;margin:0;background:linear-gradient(90deg,#fff,#ffc6f3);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:17px;margin:0;line-height:1.35}
+.emoji{font-size:64px;line-height:1;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+.rules{list-style:none;padding:0;margin:4px 0;width:100%;display:flex;flex-direction:column;gap:8px;text-align:left}
+.rules li{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:16px;display:flex;gap:10px;align-items:center}
+.rules b{color:#ffc6f3}
+.btn{border:0;border-radius:999px;padding:14px 34px;font:inherit;font-size:21px;font-weight:800;color:#fff;
+  background:linear-gradient(90deg,var(--pink),var(--purple));box-shadow:0 10px 28px rgba(255,79,216,.45);cursor:pointer}
+.btn:active{transform:scale(.95)}
+.btn.ghost{background:transparent;border:2px solid var(--glow);box-shadow:none;font-size:16px;padding:10px 22px}
+.tiny{font-size:13px;color:var(--muted);opacity:.8;margin:0}
+
+/* HUD */
+.hud{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:18px;font-weight:700}
+.hearts{letter-spacing:2px;font-size:20px}
+.timer{font-variant-numeric:tabular-nums}
+.bar{width:100%;height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--amber),var(--pink));transition:width .1s linear}
+.bar.low i{background:#ff4d6d}
+
+.slots{display:flex;gap:6px;justify-content:center;margin-top:4px}
+.slot{width:40px;height:54px;border-radius:12px;background:rgba(255,255,255,.07);border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:29px;font-weight:800}
+.slot.filled{background:linear-gradient(160deg,var(--pink),var(--purple));border-color:transparent;animation:pop .35s}
+.slot.next{border-color:var(--glow);box-shadow:0 0 14px var(--glow)}
+.slot.mystery{animation:pulse 1s infinite;border-color:var(--pink)}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes pulse{50%{box-shadow:0 0 26px var(--pink)}}
+.msg{min-height:58px;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px;line-height:1.2}
+
+.keys{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;width:100%}
+.key{height:46px;border:0;border-radius:11px;font:inherit;font-size:20px;font-weight:800;color:#fff;
+  background:rgba(255,255,255,.12);cursor:pointer;position:relative}
+.key:active{transform:scale(.9)}
+.key.used{opacity:.22;pointer-events:none}
+.key.dead{opacity:.35}
+.key.loading{color:transparent}
+.key.loading::after{content:"";position:absolute;inset:0;margin:auto;width:18px;height:18px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.key.free{position:fixed;z-index:50;width:46px;background:linear-gradient(160deg,var(--amber),var(--pink));
+  box-shadow:0 6px 20px rgba(255,79,216,.5);transition:left .14s ease-out,top .14s ease-out,transform .2s}
+.key.ph{visibility:hidden}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.burst{position:fixed;pointer-events:none;font-size:22px;z-index:99;animation:fly .9s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}}
+
+.punish{background:rgba(255,184,77,.12);border:1px dashed var(--amber);border-radius:18px;padding:14px;font-size:20px;font-weight:700;width:100%}
+.reveal{display:none;font-size:18px;color:var(--muted);animation:pop .4s;margin:0}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<main class="card">
+  <section class="screen on" id="intro">
+    <div class="emoji">😏</div>
+    <h1>Spell My Name</h1>
+    <p class="sub">You say you know me? Prove it.</p>
+    <ul class="rules">
+      <li>🔤 <span>Spell my <b>full name</b>, 7 letters, in order</span></li>
+      <li>❤️ <span><b>3 lives</b>. Wrong letter costs one</span></li>
+      <li>⏱️ <span><b>30 seconds</b>. Plenty, honestly</span></li>
+      <li>🏆 <span>Win → <b>full sponsor</b>, whenever you want</span></li>
+      <li>🥟 <span>Lose → you're <b>buying me momo</b> when we meet</span></li>
+    </ul>
+    <button class="btn" id="start">Start 💅</button>
+    <p class="tiny">100% fair. Pinky promise 🤞</p>
+  </section>
+
+  <section class="screen" id="game">
+    <div class="hud"><span class="hearts" id="hearts">❤️❤️❤️</span><span class="timer" id="timer">30.0s</span></div>
+    <div class="bar" id="bar"><i id="fill"></i></div>
+    <div class="slots" id="slots"></div>
+    <div class="msg" id="msg">First letter. Go 👀</div>
+    <div class="keys" id="keys"></div>
+  </section>
+
+  <section class="screen" id="lose">
+    <div class="emoji" id="loseEmoji">⏰</div>
+    <h1 id="loseTitle">Time's up!</h1>
+    <p class="sub" id="loseSub">6 out of 7… so close 😌</p>
+    <div class="punish">🥟 Momo's on you when we meet.<br><span class="tiny">No excuses. I have screenshots.</span></div>
+    <button class="btn ghost" id="rigged">Wait… was it rigged? 👀</button>
+    <p class="reveal" id="reveal">The H was never clickable 😂<br>Still a deal though — Kritesh</p>
+    <button class="btn ghost" id="again">Rematch 😤</button>
+  </section>
+</main>
+
+<script>
+const NAME="KRITESH", LAST=NAME.length-1, TIME=30;
+const hits={K:"K ✔️ easy",R:"R! okay okay 👀",I:"I ✨ you actually know me",T:"T 🔥 wait…",E:"E 😳 I'm sweating",S:"S?! One more and I'm broke 😭"};
+const wrong=["Nope 😜","Wrong! Do you even know me? 😤","Haha no","That's not in my name 🙄","Focus 😂"];
+// H starts with believable "glitches", then gets obviously trolly
+const glitch=["Connection weak 📶 tap again","Loading H…","Error 404: H not found 🤖","Almost 😏","Too slow!","H is shy 🙈","Catch me 😜","H said no 🙅‍♂️","Still trying? 😂"];
+
+const $=id=>document.getElementById(id);
+const slotsEl=$("slots"), keysEl=$("keys"), msgEl=$("msg");
+let i=0, lives=3, taps=0, hKey=null, over=false, busy=false, end=0, tick=null;
+
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id))}
+function say(t){msgEl.textContent=t}
+function rand(a){return a[Math.floor(Math.random()*a.length)]}
+function buzz(ms){if(navigator.vibrate)navigator.vibrate(ms)}
+function shake(el){el.classList.remove("shake");void el.offsetWidth;el.classList.add("shake")}
+
+function build(){
+  slotsEl.innerHTML="";keysEl.innerHTML="";
+  for(let n=0;n<NAME.length;n++){const s=document.createElement("div");s.className="slot"+(n===0?" next":"");slotsEl.appendChild(s)}
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(L=>{
+    const b=document.createElement("button");b.className="key";b.textContent=L;b.dataset.l=L;
+    if(L==="H"){
+      hKey=b;
+      // fires on touch-down, before a tap can ever complete
+      b.addEventListener("pointerdown",e=>{if(i===LAST){e.preventDefault();hTap()}});
+      b.addEventListener("pointerenter",e=>{if(i===LAST&&e.pointerType==="mouse"&&taps>=3)hTap()});
+      b.addEventListener("click",()=>{if(i!==LAST)press("H")});
+    }else b.addEventListener("click",()=>press(L));
+    keysEl.appendChild(b);
+  });
+}
+
+function startTimer(){
+  end=performance.now()+TIME*1000;
+  tick=setInterval(()=>{
+    const left=Math.max(0,(end-performance.now())/1000);
+    $("timer").textContent=left.toFixed(1)+"s";
+    $("fill").style.width=(left/TIME*100)+"%";
+    $("bar").classList.toggle("low",left<8);
+    if(left<=0)finish("time");
+  },100);
+}
+
+function burst(el){
+  const r=el.getBoundingClientRect();
+  for(let k=0;k<8;k++){
+    const p=document.createElement("div");p.className="burst";p.textContent=rand(["💜","✨","💖","⭐"]);
+    p.style.left=(r.left+r.width/2-10)+"px";p.style.top=(r.top+r.height/2-10)+"px";
+    p.style.setProperty("--dx",(Math.random()*160-80)+"px");p.style.setProperty("--dy",(Math.random()*-140-20)+"px");
+    document.body.appendChild(p);setTimeout(()=>p.remove(),900);
+  }
+}
+
+function press(L){
+  if(over)return;
+  if(i===LAST&&L==="H"){hTap();return}
+  if(L===NAME[i]){
+    const s=slotsEl.children[i];s.textContent=L;s.className="slot filled";burst(s);
+    keysEl.querySelector('[data-l="'+L+'"]').classList.add("used");
+    say(hits[L]||"Yes!");i++;buzz(15);
+    if(i===LAST){const m=slotsEl.children[LAST];m.textContent="?";m.className="slot mystery";
+      setTimeout(()=>{if(!over&&taps===0)say("Last one. Tap it 😏")},900)}
+    else slotsEl.children[i].classList.add("next");
+  }else{
+    lives--;$("hearts").textContent="❤️".repeat(lives)+"🖤".repeat(3-lives);
+    say(L==="H"?"H comes last. Patience 😏":rand(wrong));
+    shake(slotsEl);buzz(60);
+    if(lives<=0)finish("lives");
+  }
+}
+
+function hTap(){
+  if(over||busy)return;
+  taps++;buzz(30);
+  const step=Math.min(taps-1,glitch.length-1);
+  say(glitch[step]);
+  if(taps===1){shake(hKey);return}                       // "connection weak"
+  if(taps===2){busy=true;hKey.classList.add("loading");  // fake loading
+    setTimeout(()=>{hKey.classList.remove("loading");busy=false},1500);return}
+  if(taps===3){hKey.classList.add("dead");shake(hKey);return} // "404"
+  hKey.classList.remove("dead");run();                    // now it runs
+}
+
+function run(){
+  if(!hKey.classList.contains("free")){
+    const r=hKey.getBoundingClientRect();
+    const ph=document.createElement("div");ph.className="key ph";hKey.before(ph);
+    hKey.classList.add("free");hKey.style.left=r.left+"px";hKey.style.top=r.top+"px";void hKey.offsetWidth;
+  }
+  const w=innerWidth,h=innerHeight,cur=hKey.getBoundingClientRect();
+  let x,y,t=0;
+  do{x=14+Math.random()*(w-74);y=60+Math.random()*(h-130);t++}while(Math.hypot(x-cur.left,y-cur.top)<170&&t<25);
+  hKey.style.left=x+"px";hKey.style.top=y+"px";
+  hKey.style.transform="scale("+Math.max(.55,1-(taps-3)*.07)+") rotate("+(Math.random()*40-20)+"deg)";
+}
+
+function finish(why){
+  if(over)return;over=true;clearInterval(tick);
+  if(hKey)hKey.style.display="none";
+  if(why==="lives"){$("loseEmoji").textContent="💔";$("loseTitle").textContent="Out of lives!";
+    $("loseSub").textContent="You don't even know my name?? 😤"}
+  setTimeout(()=>show("lose"),why==="time"?300:700);
+}
+
+document.addEventListener("keydown",e=>{
+  if(!$("game").classList.contains("on"))return;
+  const L=e.key.toUpperCase();if(/^[A-Z]$/.test(L))press(L);
+});
+$("start").onclick=()=>{build();show("game");startTimer()};
+$("rigged").onclick=()=>{$("reveal").style.display="block";$("rigged").style.display="none"};
+$("again").onclick=()=>location.reload();
+</script>
+</body>
+</html>
