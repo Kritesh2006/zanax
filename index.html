@@ -37,6 +37,11 @@ section{display:flex;flex-direction:column}
 .warning p{margin:0 0 10px;font-size:.92rem}
 .warning label{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;cursor:pointer}
 .warning input{margin-top:4px;accent-color:var(--warn)}
+textarea{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;width:100%}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toggle{display:flex;gap:10px;align-items:center;cursor:pointer}
+.toggle input{accent-color:var(--accent);width:18px;height:18px}
+.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
 .go{all:unset;cursor:pointer;text-align:center;padding:16px;border-radius:999px;background:var(--accent);color:#1a1225;font-weight:500;font-size:1.05rem}
 .go[disabled]{opacity:.35;cursor:not-allowed}
 #status{font-family:var(--mono);font-size:.82rem;color:var(--muted);min-height:1.4em;margin:0}
@@ -73,6 +78,26 @@ section{display:flex;flex-direction:column}
       <button type="button" id="p-relax" data-v="relax" aria-pressed="true"><b>Relax</b><span>12 → 8 Hz, steady settle</span></button>
       <button type="button" id="p-explore" data-v="explore" aria-pressed="false"><b>Explore</b><span>~10 Hz, slow drift for richer patterns</span></button>
       <button type="button" id="p-sleep" data-v="sleep" aria-pressed="false"><b>Wind down</b><span>10 → 4 Hz, slows to the end</span></button>
+      <button type="button" id="p-intent" data-v="intent" aria-pressed="false"><b>Intention</b><span>10 → 7 Hz with a spoken visualization guide</span></button>
+    </div>
+  </section>
+
+  <section>
+    <p class="label">Your intention</p>
+    <textarea id="intent" rows="2" maxlength="160" placeholder="e.g. I get into UNCG with a scholarship"></textarea>
+    <div class="row" style="margin-top:12px">
+      <label for="guide" class="toggle"><input type="checkbox" id="guide" checked> Spoken guide</label>
+    </div>
+    <p class="hint">The guide talks you through picturing your intention while the light runs. Write it as if it's already true, in a few words.</p>
+  </section>
+
+  <section>
+    <p class="label">Light color (screen mode)</p>
+    <div class="seg seg-sm" id="colorSeg">
+      <button type="button" id="c-white" data-v="white" aria-pressed="true"><b>Warm white</b><span>Brightest</span></button>
+      <button type="button" id="c-amber" data-v="amber" aria-pressed="false"><b>Amber</b><span>Softer, calmer</span></button>
+      <button type="button" id="c-violet" data-v="violet" aria-pressed="false"><b>Violet</b><span>Deeper colors</span></button>
+      <button type="button" id="c-shift" data-v="shift" aria-pressed="false"><b>Shifting</b><span>Slowly cycles hues</span></button>
     </div>
   </section>
 
@@ -112,7 +137,9 @@ section{display:flex;flex-direction:column}
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { source:'torch', preset:'relax' };
+  const state = { source:'torch', preset:'relax', color:'white' };
+  try{ $('intent').value = localStorage.getItem('flicker-intent') || ''; }catch(e){}
+  $('intent').addEventListener('input', () => { try{ localStorage.setItem('flicker-intent', $('intent').value); }catch(e){} });
 
   // ---------- UI wiring ----------
   function seg(id, key){
@@ -122,7 +149,7 @@ section{display:flex;flex-direction:column}
       $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
     });
   }
-  seg('sourceSeg','source'); seg('presetSeg','preset');
+  seg('sourceSeg','source'); seg('presetSeg','preset'); seg('colorSeg','color');
   $('dur').oninput = () => $('durVal').textContent = $('dur').value + ' min';
   $('vol').oninput = () => { $('volVal').textContent = $('vol').value + '%'; if(audio) audio.master.gain.value = vol(); };
   $('ack').onchange = () => $('start').disabled = !$('ack').checked;
@@ -134,8 +161,56 @@ section{display:flex;flex-direction:column}
     relax:   (p) => 12 - 4 * Math.min(1, p / 0.4),
     explore: (p, t) => 10 + 1.5 * Math.sin(t / 22) + 0.8 * Math.sin(t / 7.3),
     sleep:   (p) => 10 - 6 * p,
+    intent:  (p) => p < 0.5 ? 10 - 3 * (p / 0.5) : 7 + 0.3 * Math.sin(p * 40),
   };
   const FADE_IN = 20, FADE_OUT = 15; // seconds
+
+  // ---------- light color (screen mode) ----------
+  const COLORS = { white:[1,.96,.9], amber:[1,.62,.22], violet:[.62,.38,1] };
+  function hsl(h){ // h 0..1 -> rgb 0..1, full saturation, soft
+    const f = n => { const k = (n + h * 12) % 12; return .55 - .45 * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+    return [f(0), f(8), f(4)];
+  }
+  const colorAt = t => state.color === 'shift' ? hsl((t / 90) % 1) : COLORS[state.color];
+
+  // ---------- spoken guide ----------
+  // at = fraction of session; i = needs an intention (alt used when none written)
+  const SCRIPT = [
+    { at:0.00, s:'Close your eyes and hold the light a few inches from your face. Breathe in slowly, and out.' },
+    { at:0.06, s:'You don\'t need to try to see anything. Let the colors and shapes come by themselves.' },
+    { at:0.16, s:'Your intention for this session is. {i}. Hold it lightly, like a word on the tip of your tongue.', alt:'Think of one thing you want in your life right now. Hold it lightly.' },
+    { at:0.30, s:'Picture the moment it is already true. Where are you? What do you see around you? Who is there with you?' },
+    { at:0.44, s:'Notice how it feels in your body to have it. Let that feeling grow a little with each breath.' },
+    { at:0.58, s:'Now see yourself taking the first real step toward it. What exactly are you doing, and when?' },
+    { at:0.72, s:'Let go of the details. Stay with the light, and let any images come and go.' },
+    { at:0.88, s:'Start to come back. Choose one action you will take today toward {i}.', alt:'Start to come back. Choose one small action you will take today.' },
+  ];
+  const guide = { on:false, next:0, voice:null };
+  function pickVoice(){
+    try{
+      const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+      guide.voice = vs.find(v => /Samantha|Ava|Karen|Daniel|Serena|Google US/i.test(v.name)) || vs[0] || null;
+    }catch(e){}
+  }
+  if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function say(text){
+    if(!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    if(guide.voice) u.voice = guide.voice;
+    u.rate = 0.82; u.pitch = 0.95; u.volume = 1;
+    // duck the pulse tone while the guide talks
+    u.onstart = () => { if(audio) audio.master.gain.setTargetAtTime(vol() * 0.3, audio.ctx.currentTime, 0.2); };
+    u.onend = () => { if(audio) audio.master.gain.setTargetAtTime(vol(), audio.ctx.currentTime, 0.4); };
+    speechSynthesis.speak(u);
+  }
+  function guideTick(t, total){
+    if(!guide.on) return;
+    const intent = $('intent').value.trim().replace(/[.!?]+$/, '');
+    while(guide.next < SCRIPT.length && t / total >= SCRIPT[guide.next].at){
+      const line = SCRIPT[guide.next++];
+      say(line.s.includes('{i}') ? (intent ? line.s.replaceAll('{i}', intent) : line.alt) : line.s);
+    }
+  }
 
   // ---------- audio: isochronic pulse synced to the light ----------
   let audio = null;
@@ -178,9 +253,9 @@ section{display:flex;flex-direction:column}
       const hz = curves[state.preset](t / r.total, t);
       phase = (phase + hz * dt) % 1;
       const on = phase < 0.5, env = envelope(t, r.total);
-      const v = on ? Math.round(255 * (0.25 + 0.75 * env)) : 0;
-      // warm white: slightly less blue keeps the glow through eyelids pleasant
-      cx.fillStyle = `rgb(${v},${Math.round(v*0.96)},${Math.round(v*0.9)})`;
+      const v = on ? 255 * (0.25 + 0.75 * env) : 0, c = colorAt(t);
+      cx.fillStyle = `rgb(${Math.round(v*c[0])},${Math.round(v*c[1])},${Math.round(v*c[2])})`;
+      guideTick(t, r.total);
       cx.fillRect(0, 0, cv.width, cv.height);
       if(on !== lastOn){ if(on) flips++; audioPulse(on, env); lastOn = on; }
       if(now - rateT > 2000){ measured = flips / ((now - rateT) / 1000); flips = 0; rateT = now; }
@@ -221,6 +296,7 @@ section{display:flex;flex-direction:column}
       // during fade-in, shorten the on-phase instead of dimming (the torch has no brightness control on iOS)
       const onMs = half * (0.3 + 0.7 * env), offMs = 2 * half - onMs;
       next = Math.max(next, now);
+      guideTick(t, r.total);
       await setTorch(cam.track, true); audioPulse(true, env);
       next += onMs; await sleep(next - performance.now());
       if(r.stopped) break;
@@ -244,6 +320,10 @@ section{display:flex;flex-direction:column}
   async function start(){
     status('');
     const total = +$('dur').value * 60;
+    guide.on = $('guide').checked && 'speechSynthesis' in window;
+    guide.next = 0;
+    // iOS only allows speech that starts inside a tap, so unlock it now
+    if(guide.on){ try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){} }
     let cam = null;
     if(state.source === 'torch'){
       status('Asking for camera access to control the flashlight…');
@@ -267,7 +347,9 @@ section{display:flex;flex-direction:column}
     run.cleanup.forEach(f => { try{ f(); }catch(e){} });
     try{ run.lock?.release(); }catch(e){}
     if(audio){ audio.stop(); audio = null; }
+    if(guide.on){ try{ speechSynthesis.cancel(); }catch(e){} guide.on = false; }
     $('stage').hidden = true;
+    if(msg === 'Session complete.' && $('guide').checked) say('Open your eyes when you\'re ready.');
     if(document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
     status(msg || 'Stopped.', err);
   }
