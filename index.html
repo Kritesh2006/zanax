@@ -50,6 +50,13 @@ section{display:flex;flex-direction:column;gap:12px}
 .card[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--panel2)}
 .card:focus-visible,.btn:focus-visible,.tabs button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+/* brainwave map */
+.bands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.band{all:unset;cursor:pointer;padding:12px 6px;border-radius:8px;text-align:center;display:flex;flex-direction:column;gap:2px;color:#120f18;min-width:0}
+.band b{font-family:var(--display);font-weight:500;font-size:1rem}
+.band span{font-family:var(--mono);font-size:.66rem}
+.band[aria-pressed="true"]{outline:2px solid var(--fg);outline-offset:2px}
+.band:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* lab */
 details.lab{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
 details.lab>summary{cursor:pointer;list-style:none;padding:16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
@@ -105,6 +112,13 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
   <div id="device">Checking your screen…</div>
 
   <section>
+    <h2>Brainwave map</h2>
+    <p class="hint">Your brain has rhythms that speed up when you're alert and slow down as you relax and sleep. Tap a band to set the flicker to it.</p>
+    <div class="bands" id="bandMap"></div>
+    <p class="hint" id="bandInfo">Your visual cortex reliably follows a flicker at its rate, which is measurable on EEG. That doesn't mean the whole brain switches into that state; the labels describe the rhythm, not a guaranteed feeling.</p>
+  </section>
+
+  <section>
     <div class="head"><h2>Session library</h2><button class="btn" id="random" type="button">Surprise me</button></div>
     <div class="tabs" id="tabs"></div>
     <div class="lib" id="lib"></div>
@@ -124,13 +138,13 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
 
       <p class="sub">Rhythm</p>
       <div class="grp">
-        <div class="field"><span>Frequency</span><div class="rng"><input id="hz" type="range" min="1" max="30" step="0.5"><span class="val" id="hzV"></span></div></div>
+        <div class="field"><span>Frequency</span><div class="rng"><input id="hz" type="range" min="0.5" max="40" step="0.5"><span class="val" id="hzV"></span></div></div>
         <label class="field"><span>Pattern over time</span>
           <select id="rhythm">
             <option value="steady">Steady</option><option value="drift">Gentle drift around it</option>
             <option value="sweep">Sweep to an end frequency</option><option value="arrhythmic">Arrhythmic (irregular)</option>
             <option value="wave">Slow wave (rises and falls)</option></select></label>
-        <div class="field" id="hzEndF"><span>End frequency (sweep)</span><div class="rng"><input id="hzEnd" type="range" min="1" max="30" step="0.5"><span class="val" id="hzEndV"></span></div></div>
+        <div class="field" id="hzEndF"><span>End frequency (sweep)</span><div class="rng"><input id="hzEnd" type="range" min="0.5" max="40" step="0.5"><span class="val" id="hzEndV"></span></div></div>
         <div class="field" id="jitF"><span>Irregularity</span><div class="rng"><input id="jitter" type="range" min="5" max="80" step="5"><span class="val" id="jitterV"></span></div></div>
       </div>
 
@@ -162,7 +176,7 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
       <p class="sub">Sound</p>
       <div class="grp">
         <label class="field"><span>Tone</span>
-          <select id="tone"><option value="off">Off</option><option value="pulse">Pulse synced to the light</option><option value="binaural">Binaural beat at the same rate (headphones)</option><option value="drone">Soft drone</option></select></label>
+          <select id="tone"><option value="off">Off</option><option value="pulse">Pulse synced to the light</option><option value="binaural">Binaural beat at the same rate (headphones)</option><option value="isochronic">Isochronic tone (precise sound pulses)</option><option value="clicks">Clicks (precise, like the 40 Hz studies)</option><option value="drone">Soft drone</option></select></label>
         <div class="field"><span>Tone volume</span><div class="rng"><input id="toneVol" type="range" min="0" max="100" step="5"><span class="val" id="toneVolV"></span></div></div>
         <label class="field"><span>Noise</span>
           <select id="noise"><option value="off">Off</option><option value="white">White</option><option value="pink">Pink (softer)</option><option value="brown">Brown (deep rumble)</option></select></label>
@@ -172,7 +186,7 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
       <p class="sub">Guide and length</p>
       <div class="grp">
         <label class="field"><span>Spoken guide</span>
-          <select id="guide"><option value="off">Off</option><option value="relax">Relaxation</option><option value="intent">Intention visualization</option><option value="observe">Notice the visuals</option></select></label>
+          <select id="guide"><option value="off">Off</option><option value="relax">Relaxation</option><option value="intent">Intention visualization</option><option value="observe">Notice the visuals</option><option value="lucid">Lucid dream prep</option><option value="focus">Focus</option></select></label>
         <div class="field"><span>Length</span><div class="rng"><input id="dur" type="range" min="3" max="40" step="1"><span class="val" id="durV"></span></div></div>
       </div>
       <label class="field"><span>Your intention (used by the intention guide)</span>
@@ -200,6 +214,8 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
       <li><a href="https://refubium.fu-berlin.de/handle/fub188/40437" target="_blank" rel="noopener">Frequency and rhythmicity of flicker (FU Berlin)</a>: 10 Hz rhythmic strongest; irregular flicker much weaker.</li>
       <li><a href="https://refubium.fu-berlin.de/handle/fub188/36506" target="_blank" rel="noopener">3 Hz vs 10 Hz flicker phenomena</a>: vivid simple visuals, strongest at 10 Hz.</li>
       <li><a href="https://link.springer.com/article/10.1038/s41598-024-52372-1" target="_blank" rel="noopener">Ganzflicker vs Ganzfeld</a> and <a href="https://www.biorxiv.org/content/10.1101/2023.08.08.552408.full.pdf" target="_blank" rel="noopener">Dreamachine-team comparison</a>: flicker gives tunnels and spirals early, steady light gives slower, cloudier imagery.</li>
+      <li><a href="https://news.mit.edu/2022/small-studies-40hz-sensory-stimulation-confirm-safety-suggest-alzheimers-benefits-1213" target="_blank" rel="noopener">40 Hz light and sound (MIT)</a>: safe in small trials, early signs of benefit in Alzheimer's, not yet proof.</li>
+      <li><a href="https://pubmed.ncbi.nlm.nih.gov/30073406/" target="_blank" rel="noopener">Binaural beats meta-analysis</a>: a moderate average effect across 22 studies, depending on frequency and exposure time.</li>
       <li><a href="https://research.universityofgalway.ie/en/publications/fechner-colors-are-induced-by-flickering-monochromatic-light/" target="_blank" rel="noopener">Fechner colors</a>: flickering a single color can make you see other colors, depending on frequency.</li>
     </ul>
   </div>
@@ -244,6 +260,19 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
     { cat:'Mind', name:'Intention', meta:'10 → 7 Hz · guided', d:'A voice guides you to picture your intention and your first step.', c:P({rhythm:'sweep',hzEnd:7,wave:'soft',colorA:'violet',breath:'46',guide:'intent',dur:10}) },
     { cat:'Mind', name:'Wind Down', meta:'10 → 4 Hz · amber · brown noise', d:'Slows toward the end, for before sleep.', c:P({rhythm:'sweep',hzEnd:4,wave:'soft',colorA:'amber',breath:'478',noise:'brown',tone:'drone',guide:'relax',dur:15}) },
     { cat:'Mind', name:'Calm Glow', meta:'irregular 10 Hz · warm', d:'Irregular flicker strongly reduces patterns. Use it for light and calm without visuals.', c:P({rhythm:'arrhythmic',jitter:50,wave:'soft',breath:'55',colorA:'warm',noise:'pink'}) },
+    { cat:'Brainwaves', name:'Delta Deep Rest', meta:'2 Hz · sine · deep red · 20 min', d:'Delta is the rhythm of deep sleep. Very slow, gentle swells of light for lying down.', c:P({hz:2,wave:'sine',colorA:'red',bright:50,breath:'478',tone:'isochronic',toneVol:20,noise:'brown',guide:'relax',dur:20}) },
+    { cat:'Brainwaves', name:'Theta Drift', meta:'6 Hz · soft violet · 15 min', d:'Theta shows up in drowsiness, deep meditation and dreaming. Dreamier, slower visuals.', c:P({hz:6,rhythm:'drift',wave:'soft',colorA:'violet',breath:'46',tone:'isochronic',noise:'pink',guide:'observe',dur:15}) },
+    { cat:'Brainwaves', name:'Hypnagogic Edge', meta:'7 → 4 Hz · amber · 25 min', d:'Slides from light theta toward sleep, where dream-like images appear at the edge of sleep. Lie down.', c:P({hz:7,rhythm:'sweep',hzEnd:4,wave:'sine',colorA:'amber',bright:60,breath:'478',tone:'drone',noise:'brown',guide:'observe',dur:25}) },
+    { cat:'Brainwaves', name:'Schumann 7.83', meta:'7.83 Hz · soft teal', d:'The Earth\'s Schumann resonance, popular in meditation circles. There is no evidence it is special for the brain; it simply sits between theta and alpha.', c:P({hz:7.5,wave:'soft',colorA:'teal',breath:'55',tone:'binaural',dur:12}) },
+    { cat:'Brainwaves', name:'Alpha Calm', meta:'10 Hz · sine · blue · isochronic', d:'Alpha is relaxed, eyes-closed wakefulness. The most studied flicker rate.', c:P({wave:'sine',colorA:'blue',breath:'55',tone:'isochronic',dur:10}) },
+    { cat:'Brainwaves', name:'SMR Focus', meta:'13 Hz · sharp white · focus guide', d:'Low beta (SMR) is linked to calm, still focus. Short session before studying.', c:P({hz:13,colorA:'white',tone:'isochronic',guide:'focus',dur:8}) },
+    { cat:'Brainwaves', name:'Beta Wake-Up', meta:'18 Hz · sharp yellow · 6 min', d:'Beta is alert, active thinking. A quick, brisk session for the morning.', c:P({hz:18,colorA:'yellow',tone:'clicks',toneVol:25,dur:6}) },
+    { cat:'Brainwaves', name:'Gamma 40', meta:'40 Hz light + clicks', d:'MIT studied 40 Hz light and sound for an hour a day in early Alzheimer\'s; results were promising but small. Most phones can\'t flash at 40 Hz, so the clicks carry the rhythm and the light glows steady.', c:P({hz:40,wave:'sharp',colorA:'warm',bright:60,tone:'clicks',toneVol:35,dur:15}) },
+    { cat:'Sound', name:'Isochronic Theta', meta:'6 Hz sound only · dim glow', d:'No flashing. A soft steady glow with sound pulses at 6 Hz, for people who don\'t want flicker.', c:P({mode:'ganzfeld',hz:6,colorA:'violet',bright:30,tone:'isochronic',toneVol:35,noise:'pink',noiseVol:20,guide:'relax',dur:15}) },
+    { cat:'Sound', name:'Binaural Theta', meta:'6 Hz binaural · steady amber', d:'A binaural beat at 6 Hz with steady light. Needs headphones. Binaural beats show modest, mixed effects in research.', c:P({mode:'ganzfeld',hz:6,colorA:'amber',bright:35,tone:'binaural',toneVol:35,noise:'brown',noiseVol:20,dur:15}) },
+    { cat:'Sound', name:'Pink Noise Ganzfeld', meta:'steady warm · pink noise · 25 min', d:'The classic Ganzfeld: uniform light, steady noise, nothing to look at. Imagery builds slowly.', c:P({mode:'ganzfeld',colorA:'warm',bright:45,tone:'off',noise:'pink',noiseVol:45,guide:'observe',dur:25}) },
+    { cat:'Mind', name:'Lucid Dream Prep', meta:'8 → 5 Hz · before sleep', d:'Uses a common lucid-dreaming method: rehearse noticing that you are dreaming as you fall asleep.', c:P({hz:8,rhythm:'sweep',hzEnd:5,wave:'sine',colorA:'blue',bright:55,breath:'478',tone:'drone',noise:'brown',guide:'lucid',dur:15}) },
+    { cat:'Mind', name:'Box Breath Reset', meta:'10 Hz soft · box breathing', d:'The light swells and holds in a 4-4-4-4 box pattern. Follow it with your breath.', c:P({wave:'soft',colorA:'teal',breath:'box',tone:'drone',dur:8}) },
     { cat:'Eyes open', name:'Ganzflicker Red', meta:'10 Hz red/black · eyes OPEN', d:'The research version: eyes open, at arm\'s length, lower brightness. Look at the center and relax your gaze.', c:P({colorA:'red',bright:40,tone:'off',dur:10}) },
   ];
 
@@ -393,7 +422,7 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
   }
 
   // ---------- audio ----------
-  let audio = null;
+  let audio = null, curHz = 10, curEnv = 0;
   const tv = () => (cfg.toneVol / 100) * 0.25, nv = () => (cfg.noiseVol / 100) * 0.35;
   function noiseBuffer(ctx, kind){
     const len = ctx.sampleRate * 4, buf = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -419,7 +448,7 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
           const m = ctx.createChannelMerger(2); m.connect(tg);
           const L = ctx.createOscillator(), R = ctx.createOscillator(); L.frequency.value = 200; R.frequency.value = 200 + cfg.hz;
           L.connect(m, 0, 0); R.connect(m, 0, 1); L.start(); R.start(); a.nodes.push(L, R); a.right = R;
-        } else {
+        } else if(cfg.tone === 'pulse' || cfg.tone === 'drone'){
           const g = ctx.createGain(); g.gain.value = cfg.tone === 'drone' ? 1 : 0; g.connect(tg); a.pulse = cfg.tone === 'pulse' ? g : null;
           [[174,1],[261.6,.35],[87,.5]].forEach(([f, v]) => { const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.value = f; og.gain.value = v; o.connect(og).connect(g); o.start(); a.nodes.push(o); });
         }
@@ -429,7 +458,22 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
         const ng = ctx.createGain(); ng.gain.value = 0; ng.gain.setTargetAtTime(nv(), ctx.currentTime, 3);
         src.connect(ng).connect(out); src.start(); a.nodes.push(src);
       }
-      a.stop = () => { a.nodes.forEach(n => { try{ n.stop(); }catch(e){} }); try{ ctx.close(); }catch(e){} };
+      if(cfg.tone === 'isochronic' || cfg.tone === 'clicks'){
+        const tg = a.toneGain; let next = ctx.currentTime + 0.1;
+        let carrier = null, click = null;
+        if(cfg.tone === 'isochronic'){ const o = ctx.createOscillator(); o.frequency.value = 220; carrier = ctx.createGain(); carrier.gain.value = 0; o.connect(carrier).connect(tg); o.start(); a.nodes.push(o); }
+        else { click = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.004), ctx.sampleRate); const d = click.getChannelData(0); for(let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); }
+        // schedule sound pulses ahead of time so their rate is exact, whatever the screen can do
+        a.timer = setInterval(() => {
+          const hz = Math.max(0.5, curHz), lvl = Math.max(0.15, curEnv);
+          while(next < ctx.currentTime + 0.12){
+            if(carrier){ const g = carrier.gain, w = 1 / hz; g.setValueAtTime(0, next); g.linearRampToValueAtTime(lvl, next + w * .1); g.setValueAtTime(lvl, next + w * .4); g.linearRampToValueAtTime(0, next + w * .5); }
+            else { const s = ctx.createBufferSource(), sg = ctx.createGain(); s.buffer = click; sg.gain.value = lvl; s.connect(sg).connect(tg); s.start(next); }
+            next += 1 / hz;
+          }
+        }, 25);
+      }
+      a.stop = () => { clearInterval(a.timer); a.nodes.forEach(n => { try{ n.stop(); }catch(e){} }); try{ ctx.close(); }catch(e){} };
       audio = a;
     }catch(e){ audio = null; }
   }
@@ -437,7 +481,7 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
     if(!audio) return;
     const t = audio.ctx.currentTime;
     if(audio.pulse){ audio.pulse.gain.cancelScheduledValues(t); audio.pulse.gain.setTargetAtTime(on ? env : 0, t, 0.006); }
-    if(audio.right) audio.right.frequency.setTargetAtTime(200 + hz, t, 0.1);
+    if(audio.right) audio.right.frequency.setTargetAtTime(200 + Math.min(hz, 40), t, 0.1);
   }
   const duck = on => { if(audio && audio.toneGain) audio.toneGain.gain.setTargetAtTime(on ? tv() * 0.3 : tv(), audio.ctx.currentTime, 0.3); };
 
@@ -455,6 +499,19 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
       { at:0.35, s:'If a pattern appears, stay with it without trying to hold it.' },
       { at:0.60, s:'Images may become more complex now. Let them unfold on their own.' },
       { at:0.88, s:'Begin to come back. Remember one image you saw.' } ],
+    lucid:[
+      { at:0.00, s:'Close your eyes. Settle in as if you were going to sleep.' },
+      { at:0.08, s:'Remember a recent dream, any small piece of it.' },
+      { at:0.20, s:'Now imagine being back in that dream, and noticing something strange. You realize: I am dreaming.' },
+      { at:0.36, s:'Repeat quietly to yourself. Next time I am dreaming, I will notice I am dreaming.' },
+      { at:0.55, s:'Picture what you will do once you know you are dreaming. Make it vivid.' },
+      { at:0.75, s:'Keep the intention as you let the light slow down. Let yourself drift.' } ],
+    focus:[
+      { at:0.00, s:'Sit upright, eyes closed. Take one slow breath.' },
+      { at:0.10, s:'Name, in your head, the one task you will work on after this.' },
+      { at:0.35, s:'Picture the first five minutes of doing it. Where you sit, what you open first.' },
+      { at:0.65, s:'Each time your mind wanders, come back to the light.' },
+      { at:0.88, s:'Coming back. When you open your eyes, start that task right away.' } ],
     intent:[
       { at:0.00, s:'Close your eyes and hold the light a few inches from your face. Breathe in slowly, and out.' },
       { at:0.06, s:'You don\'t need to try to see anything. Let the colors and shapes come by themselves.' },
@@ -501,11 +558,14 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
       if(t >= r.total){ stop('Session complete.'); return; }
       const env = envelope(t, r.total), k = 255 * (cfg.bright / 100) * (0.25 + 0.75 * env) * breathAt(t), cols = colorsAt(t), W = cv.width, H = cv.height;
       guideTick(t, r.total);
+      curEnv = env;
       if(cfg.mode === 'ganzfeld'){
+        curHz = hzAt(t, r.total);
         paint(0, 0, W, H, 1, [cols[0], cols[0]], k * (0.92 + 0.08 * Math.sin(t / 9)));
-        hud(0, 0, t, r.total); requestAnimationFrame(frame); return;
+        hud(curHz, 0, t, r.total); requestAnimationFrame(frame); return;
       }
-      const target = hzAt(t, r.total);
+      const target = hzAt(t, r.total); curHz = target;
+      if(target > fps / 2.2){ paint(0, 0, W, H, .55, cols, k); hud(target, 0, t, r.total, true); requestAnimationFrame(frame); return; }
       if(cfg.rhythm !== 'arrhythmic') cycleHz = target;
       phase += cycleHz * dt;
       if(phase >= 1){ phase %= 1; flips++; if(cfg.rhythm === 'arrhythmic') cycleHz = target * (1 + (cfg.jitter / 100) * (Math.random() * 2 - 1)); }
@@ -545,7 +605,7 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
     while(!r.stopped){
       const now = performance.now(), t = (now - r.t0) / 1000;
       if(t >= r.total){ stop('Session complete.'); return; }
-      let hz = hzAt(t, r.total); if(cfg.rhythm === 'arrhythmic') hz *= 1 + (cfg.jitter / 100) * (Math.random() * 2 - 1);
+      let hz = hzAt(t, r.total); curHz = hz; curEnv = envelope(t, r.total); if(cfg.rhythm === 'arrhythmic') hz *= 1 + (cfg.jitter / 100) * (Math.random() * 2 - 1);
       const period = 1000 / hz, onMs = period * (cfg.duty / 100), env = envelope(t, r.total);
       next = Math.max(next, now); guideTick(t, r.total);
       await setTorch(cam.track, true); audioTick(true, env, hz);
@@ -558,9 +618,9 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
     }
   }
 
-  function hud(hz, measured, t, total){
+  function hud(hz, measured, t, total, tooFast){
     const left = Math.max(0, total - t), m = Math.floor(left / 60), s = Math.floor(left % 60);
-    const rate = cfg.mode === 'ganzfeld' ? 'steady light' : `${hz.toFixed(1)} Hz · actual ${measured ? measured.toFixed(1) : '—'}`;
+    const rate = tooFast ? `${hz.toFixed(0)} Hz in sound · light steady (screen max ~${Math.floor(fps/2.2)} Hz)` : cfg.mode === 'ganzfeld' ? (cfg.tone === 'isochronic' || cfg.tone === 'binaural' || cfg.tone === 'clicks' ? `steady light · sound ${hz.toFixed(1)} Hz` : 'steady light') : `${hz.toFixed(1)} Hz · actual ${measured ? measured.toFixed(1) : '—'}`;
     $('hudL').textContent = `${activeName} · ${rate} · ${m}:${String(s).padStart(2,'0')}`;
   }
 
@@ -603,6 +663,22 @@ select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--b
   $('stage').addEventListener('pointerdown', () => stop('Stopped.'));
   addEventListener('keydown', e => { if(e.key === 'Escape') stop('Stopped.'); });
   document.addEventListener('visibilitychange', () => { if(document.hidden) stop('Stopped because the page went to the background.'); });
+
+  // ---------- brainwave map ----------
+  const BANDS = [
+    { n:'Delta', r:'0.5–4 Hz', hz:2,  c:'#c96a8a', d:'Delta: deep, dreamless sleep. Very slow flicker feels like soft swells of light, with few patterns.' },
+    { n:'Theta', r:'4–8 Hz',   hz:6,  c:'#b089ff', d:'Theta: drowsiness, deep meditation, dreaming. Visuals feel slower and dreamier.' },
+    { n:'Alpha', r:'8–12 Hz',  hz:10, c:'#7fb6ff', d:'Alpha: relaxed, eyes-closed wakefulness. 10 Hz gives the strongest patterns in research.' },
+    { n:'Beta',  r:'12–30 Hz', hz:16, c:'#7ee0b5', d:'Beta: alert, active thinking. Faster flicker, finer and busier visuals.' },
+    { n:'Gamma', r:'30+ Hz',   hz:40, c:'#ffd36b', d:'Gamma: fast rhythm studied at 40 Hz with light and sound. Phone screens usually can\'t flash this fast, so sound carries it.' },
+  ];
+  $('bandMap').innerHTML = BANDS.map((b,i) => `<button type="button" class="band" data-i="${i}" style="background:${b.c}" aria-pressed="false"><b>${b.n}</b><span>${b.r}</span></button>`).join('');
+  $('bandMap').addEventListener('click', e => {
+    const b = e.target.closest('.band'); if(!b) return; const band = BANDS[+b.dataset.i];
+    $('bandMap').querySelectorAll('.band').forEach(x => x.setAttribute('aria-pressed', x === b));
+    cfg.hz = band.hz; if(cfg.rhythm === 'sweep') cfg.rhythm = 'steady'; if(band.hz >= 30 && cfg.tone === 'pulse') cfg.tone = 'clicks';
+    custom(); $('bandInfo').textContent = band.d + ` Set to ${band.hz} Hz.`;
+  });
 
   drawTabs(); drawLib(); syncControls();
 })();
