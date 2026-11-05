@@ -3,364 +3,587 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0b0a10">
 <title>Flicker Room</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Layout: one narrow column of controls in a dark room; the session takes over the whole screen. */
+/* Layout: a single phone-first column. Preset library on top, a full custom lab below, the session takes over the screen. */
 :root{
-  --bg:#0b0a10; --panel:#15131c; --line:#2a2633; --fg:#e9e6f0; --muted:#8f89a0;
-  --accent:#c9a6ff; --warn:#ffb86b; --danger:#ff6b81;
+  --bg:#0b0a10; --panel:#15131c; --panel2:#1c1925; --line:#2a2633; --fg:#e9e6f0; --muted:#8f89a0;
+  --accent:#c9a6ff; --warn:#ffb86b; --danger:#ff6b81; --ok:#7ee0b5;
   --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
-main{max-width:560px;margin:0 auto;padding-block:max(32px,env(safe-area-inset-top)) 48px;
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+main{max-width:720px;margin:0 auto;padding-block:max(28px,env(safe-area-inset-top)) 56px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   display:flex;flex-direction:column;gap:28px}
-h1{font-family:var(--display);font-weight:300;font-size:2.6rem;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-family:var(--display);font-weight:300;font-size:clamp(2.2rem,8vw,3rem);line-height:1.05;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:500;font-size:1.3rem;margin:0}
 .lede{color:var(--muted);margin:8px 0 0;max-width:60ch}
-.label{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
-section{display:flex;flex-direction:column}
-.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.seg button{all:unset;cursor:pointer;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:flex;flex-direction:column;gap:2px}
-.seg button b{font-weight:500}
-.seg button span{font-size:.82rem;color:var(--muted)}
-.seg button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.seg button:focus-visible,.go:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.row{display:flex;align-items:center;gap:14px}
-.row input[type=range]{flex:1;accent-color:var(--accent)}
-.val{font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:5.5ch;text-align:right}
+.label{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+section{display:flex;flex-direction:column;gap:12px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+
+/* device check */
+#device{font-family:var(--mono);font-size:.8rem;border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--muted)}
+#device.warn{border-color:color-mix(in srgb,var(--warn) 50%,transparent);color:var(--warn)}
+#device.good{color:var(--ok)}
+
+/* preset library */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{all:unset;cursor:pointer;font-family:var(--mono);font-size:.75rem;padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.tabs button[aria-pressed="true"]{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.card{all:unset;cursor:pointer;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;gap:6px;min-width:0}
+.card .top{display:flex;align-items:center;gap:10px}
+.swatch{width:22px;height:22px;border-radius:50%;flex:none;border:1px solid var(--line)}
+.card b{font-weight:500}
+.card .meta{font-family:var(--mono);font-size:.72rem;color:var(--accent)}
+.card .d{font-size:.84rem;color:var(--muted)}
+.card[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--panel2)}
+.card:focus-visible,.btn:focus-visible,.tabs button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* lab */
+details.lab{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+details.lab>summary{cursor:pointer;list-style:none;padding:16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+details.lab>summary::-webkit-details-marker{display:none}
+details.lab>summary::after{content:"+";font-family:var(--mono);color:var(--accent);font-size:1.2rem}
+details.lab[open]>summary::after{content:"–"}
+.labbody{padding:0 16px 18px;display:flex;flex-direction:column;gap:22px}
+.grp{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>span{font-size:.85rem;color:var(--muted)}
+select,textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%}
+.rng{display:flex;align-items:center;gap:10px}
+.rng input{flex:1;accent-color:var(--accent);min-width:0}
+.val{font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:5ch;text-align:right;font-size:.9rem}
+.colors{display:flex;flex-wrap:wrap;gap:6px}
+.colors button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;border:2px solid transparent}
+.colors button[aria-pressed="true"]{border-color:var(--fg)}
+.colors button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0;border-top:1px solid var(--line);padding-top:16px}
+.hint{font-size:.84rem;color:var(--muted);margin:0}
+.toggle{display:flex;gap:10px;align-items:center;cursor:pointer;font-size:.95rem}
+.toggle input{accent-color:var(--accent);width:18px;height:18px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{all:unset;cursor:pointer;padding:10px 14px;border:1px solid var(--line);border-radius:999px;font-size:.9rem;background:var(--panel2)}
+.count{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+
 .warning{border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 7%,var(--bg));border-radius:10px;padding:16px}
 .warning p{margin:0 0 10px;font-size:.92rem}
 .warning label{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;cursor:pointer}
 .warning input{margin-top:4px;accent-color:var(--warn)}
-textarea{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;width:100%}
-textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.toggle{display:flex;gap:10px;align-items:center;cursor:pointer}
-.toggle input{accent-color:var(--accent);width:18px;height:18px}
-.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
-.go{all:unset;cursor:pointer;text-align:center;padding:16px;border-radius:999px;background:var(--accent);color:#1a1225;font-weight:500;font-size:1.05rem}
+.go{all:unset;cursor:pointer;text-align:center;padding:17px;border-radius:999px;background:var(--accent);color:#1a1225;font-weight:500;font-size:1.05rem}
 .go[disabled]{opacity:.35;cursor:not-allowed}
+.go:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 #status{font-family:var(--mono);font-size:.82rem;color:var(--muted);min-height:1.4em;margin:0}
 #status.err{color:var(--danger)}
-.how{font-size:.9rem;color:var(--muted)}
-.how ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.sources{font-size:.82rem;color:var(--muted)}
+.sources a{color:var(--muted)}
+.sources ul{margin:0;padding-left:18px}
 
-/* session overlay */
 #stage{position:fixed;inset:0;background:#000;z-index:50;touch-action:none}
 #stage canvas{position:absolute;inset:0;width:100%;height:100%}
-#hud{position:absolute;left:0;right:0;bottom:0;padding:16px max(16px,env(safe-area-inset-left)) calc(16px + env(safe-area-inset-bottom)) ;
-  font-family:var(--mono);font-size:.8rem;color:#6d667c;display:flex;justify-content:space-between;gap:12px;pointer-events:none}
-#hud.hidden{opacity:0}
+#hud{position:absolute;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom));
+  font-family:var(--mono);font-size:.75rem;color:#555;display:flex;justify-content:space-between;gap:12px;pointer-events:none;mix-blend-mode:difference}
 </style>
 </head>
 <body>
 <main>
   <header>
     <h1>Flicker Room</h1>
-    <p class="lede">Rhythmic light on closed eyes, paced like a guided session. Sit in a fully dark room, close your eyes, and hold the light 5–15 cm from your face.</p>
+    <p class="lede">Rhythmic and steady light on closed eyes, tuned with what research has found about flicker visuals. Fully dark room, device at full brightness, eyes closed, light 5–10 cm from your face.</p>
   </header>
 
+  <div id="device">Checking your screen…</div>
+
   <section>
-    <p class="label">Light source</p>
-    <div class="seg" id="sourceSeg">
-      <button type="button" id="src-torch" data-v="torch" aria-pressed="true"><b>iPhone flashlight</b><span>Brightest. Needs camera permission + HTTPS</span></button>
-      <button type="button" id="src-screen" data-v="screen" aria-pressed="false"><b>Screen</b><span>Precise timing. Max brightness, hold close</span></button>
+    <div class="head"><h2>Session library</h2><button class="btn" id="random" type="button">Surprise me</button></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="lib" id="lib"></div>
+  </section>
+
+  <details class="lab" id="lab">
+    <summary><span><b>Custom lab</b><br><span class="count" id="count"></span></span></summary>
+    <div class="labbody">
+
+      <p class="sub">Light source</p>
+      <div class="grp">
+        <label class="field"><span>Source</span>
+          <select id="source"><option value="screen">Screen (phone or laptop)</option><option value="torch">iPhone flashlight (on/off only)</option></select></label>
+        <label class="field"><span>Mode</span>
+          <select id="mode"><option value="flicker">Flicker</option><option value="ganzfeld">Ganzfeld (steady light, no flashing)</option></select></label>
+      </div>
+
+      <p class="sub">Rhythm</p>
+      <div class="grp">
+        <div class="field"><span>Frequency</span><div class="rng"><input id="hz" type="range" min="1" max="30" step="0.5"><span class="val" id="hzV"></span></div></div>
+        <label class="field"><span>Pattern over time</span>
+          <select id="rhythm">
+            <option value="steady">Steady</option><option value="drift">Gentle drift around it</option>
+            <option value="sweep">Sweep to an end frequency</option><option value="arrhythmic">Arrhythmic (irregular)</option>
+            <option value="wave">Slow wave (rises and falls)</option></select></label>
+        <div class="field" id="hzEndF"><span>End frequency (sweep)</span><div class="rng"><input id="hzEnd" type="range" min="1" max="30" step="0.5"><span class="val" id="hzEndV"></span></div></div>
+        <div class="field" id="jitF"><span>Irregularity</span><div class="rng"><input id="jitter" type="range" min="5" max="80" step="5"><span class="val" id="jitterV"></span></div></div>
+      </div>
+
+      <p class="sub">Flash shape</p>
+      <div class="grp">
+        <label class="field"><span>Edge</span>
+          <select id="wave"><option value="sharp">Sharp (hard on/off)</option><option value="soft">Soft (fades each flash)</option><option value="sine">Smooth sine (continuous)</option></select></label>
+        <div class="field"><span>Light-on share of each flash</span><div class="rng"><input id="duty" type="range" min="10" max="90" step="5"><span class="val" id="dutyV"></span></div></div>
+        <div class="field"><span>Brightness</span><div class="rng"><input id="bright" type="range" min="10" max="100" step="5"><span class="val" id="brightV"></span></div></div>
+        <label class="field"><span>Breathing swell</span>
+          <select id="breath"><option value="off">Off</option><option value="46">4 in · 6 out</option><option value="478">4 in · 7 hold · 8 out</option><option value="box">Box 4 · 4 · 4 · 4</option><option value="55">5 in · 5 out (resonant)</option></select></label>
+      </div>
+
+      <p class="sub">Color</p>
+      <div class="grp">
+        <label class="field"><span>Color mode</span>
+          <select id="colorMode"><option value="fixed">One color + dark</option><option value="alternate">Alternate two colors</option><option value="cycle">Rainbow cycle</option><option value="drift">Slow drift between two colors</option></select></label>
+        <div class="field" id="cycF"><span>Cycle / drift speed</span><div class="rng"><input id="cycleSec" type="range" min="10" max="180" step="10"><span class="val" id="cycleSecV"></span></div></div>
+        <div class="field"><span>Color A</span><div class="colors" id="colorA"></div></div>
+        <div class="field" id="colBF"><span>Color B</span><div class="colors" id="colorB"></div></div>
+      </div>
+
+      <p class="sub">Layout on screen</p>
+      <div class="grp">
+        <label class="field"><span>Shape</span>
+          <select id="layout"><option value="full">Full screen</option><option value="split">Left / right, opposite timing</option><option value="ring">Center vs outer ring, opposite timing</option><option value="center">Center glow only</option><option value="bands">Vertical bands, rippling</option></select></label>
+      </div>
+
+      <p class="sub">Sound</p>
+      <div class="grp">
+        <label class="field"><span>Tone</span>
+          <select id="tone"><option value="off">Off</option><option value="pulse">Pulse synced to the light</option><option value="binaural">Binaural beat at the same rate (headphones)</option><option value="drone">Soft drone</option></select></label>
+        <div class="field"><span>Tone volume</span><div class="rng"><input id="toneVol" type="range" min="0" max="100" step="5"><span class="val" id="toneVolV"></span></div></div>
+        <label class="field"><span>Noise</span>
+          <select id="noise"><option value="off">Off</option><option value="white">White</option><option value="pink">Pink (softer)</option><option value="brown">Brown (deep rumble)</option></select></label>
+        <div class="field"><span>Noise volume</span><div class="rng"><input id="noiseVol" type="range" min="0" max="100" step="5"><span class="val" id="noiseVolV"></span></div></div>
+      </div>
+
+      <p class="sub">Guide and length</p>
+      <div class="grp">
+        <label class="field"><span>Spoken guide</span>
+          <select id="guide"><option value="off">Off</option><option value="relax">Relaxation</option><option value="intent">Intention visualization</option><option value="observe">Notice the visuals</option></select></label>
+        <div class="field"><span>Length</span><div class="rng"><input id="dur" type="range" min="3" max="40" step="1"><span class="val" id="durV"></span></div></div>
+      </div>
+      <label class="field"><span>Your intention (used by the intention guide)</span>
+        <textarea id="intent" rows="2" maxlength="160" placeholder="e.g. I'm accepted to UNCG with a scholarship"></textarea></label>
+
+      <p class="sub">Save this setup</p>
+      <div class="row">
+        <input type="text" id="saveName" maxlength="30" placeholder="Name it" style="flex:1;min-width:140px">
+        <button class="btn" id="save" type="button">Save to My sessions</button>
+      </div>
     </div>
-  </section>
-
-  <section>
-    <p class="label">Session</p>
-    <div class="seg" id="presetSeg">
-      <button type="button" id="p-relax" data-v="relax" aria-pressed="true"><b>Relax</b><span>12 → 8 Hz, steady settle</span></button>
-      <button type="button" id="p-explore" data-v="explore" aria-pressed="false"><b>Explore</b><span>~10 Hz, slow drift for richer patterns</span></button>
-      <button type="button" id="p-sleep" data-v="sleep" aria-pressed="false"><b>Wind down</b><span>10 → 4 Hz, slows to the end</span></button>
-      <button type="button" id="p-intent" data-v="intent" aria-pressed="false"><b>Intention</b><span>10 → 7 Hz with a spoken visualization guide</span></button>
-    </div>
-  </section>
-
-  <section>
-    <p class="label">Your intention</p>
-    <textarea id="intent" rows="2" maxlength="160" placeholder="e.g. I get into UNCG with a scholarship"></textarea>
-    <div class="row" style="margin-top:12px">
-      <label for="guide" class="toggle"><input type="checkbox" id="guide" checked> Spoken guide</label>
-    </div>
-    <p class="hint">The guide talks you through picturing your intention while the light runs. Write it as if it's already true, in a few words.</p>
-  </section>
-
-  <section>
-    <p class="label">Light style (screen mode)</p>
-    <div class="seg" id="styleSeg">
-      <button type="button" id="st-sharp" data-v="sharp" aria-pressed="false"><b>Sharp</b><span>Hard on/off flashes, strongest patterns</span></button>
-      <button type="button" id="st-soft" data-v="soft" aria-pressed="false"><b>Soft</b><span>Each flash fades in and out, easier on the eyes</span></button>
-      <button type="button" id="st-breath" data-v="breath" aria-pressed="true"><b>Breathing</b><span>Flashes swell brighter as you breathe in, dim as you breathe out</span></button>
-    </div>
-  </section>
-
-  <section>
-    <p class="label">Brightness (screen mode)</p>
-    <div class="row"><input id="bright" type="range" min="20" max="100" value="100" step="5"><span class="val" id="brightVal">100%</span></div>
-    <p class="hint">Keep your device at full brightness and set the level here, so the page controls it smoothly. Turn it down if the light feels harsh.</p>
-  </section>
-
-  <section>
-    <p class="label">Light color (screen mode)</p>
-    <div class="seg seg-sm" id="colorSeg">
-      <button type="button" id="c-white" data-v="white" aria-pressed="true"><b>Warm white</b><span>Brightest</span></button>
-      <button type="button" id="c-amber" data-v="amber" aria-pressed="false"><b>Amber</b><span>Softer, calmer</span></button>
-      <button type="button" id="c-violet" data-v="violet" aria-pressed="false"><b>Violet</b><span>Deeper colors</span></button>
-      <button type="button" id="c-shift" data-v="shift" aria-pressed="false"><b>Shifting</b><span>Slowly cycles hues</span></button>
-    </div>
-  </section>
-
-  <section>
-    <p class="label">Length</p>
-    <div class="row"><input id="dur" type="range" min="3" max="20" value="8" step="1"><span class="val" id="durVal">8 min</span></div>
-  </section>
-
-  <section>
-    <p class="label">Pulse tone</p>
-    <div class="row"><input id="vol" type="range" min="0" max="100" value="35"><span class="val" id="volVal">35%</span></div>
-  </section>
+  </details>
 
   <div class="warning" role="note">
-    <p><b>Photosensitivity warning.</b> Flashing at 3–30 Hz can trigger seizures, including in people with no history of epilepsy. Don't use this if you or close family have epilepsy, if you're under 18, or while alone the first time. Stop at once if you feel dizzy, nauseous or unwell.</p>
+    <p><b>Photosensitivity warning.</b> Flashing at 3–30 Hz can trigger seizures, including in people with no history of epilepsy. Don't use flicker if you or close family have epilepsy, if you're under 18, or alone the first time. Keep eyes closed unless a session says otherwise. Stop if you feel dizzy, nauseous, or your eyes hurt.</p>
     <label for="ack"><input type="checkbox" id="ack"> I understand and want to continue.</label>
   </div>
 
   <button class="go" id="start" type="button" disabled>Start session</button>
   <p id="status" aria-live="polite"></p>
 
-  <div class="how">
-    <p class="label">During a session</p>
-    <ol>
-      <li>The first 20 seconds fade in gently.</li>
-      <li>Tap anywhere (or press Esc) to stop instantly.</li>
-      <li>The readout at the bottom shows the target rate and the rate your light is actually reaching.</li>
-    </ol>
+  <div class="sources">
+    <p class="label">What the presets are based on</p>
+    <ul>
+      <li><a href="https://refubium.fu-berlin.de/handle/fub188/40437" target="_blank" rel="noopener">Frequency and rhythmicity of flicker (FU Berlin)</a>: 10 Hz rhythmic strongest; irregular flicker much weaker.</li>
+      <li><a href="https://refubium.fu-berlin.de/handle/fub188/36506" target="_blank" rel="noopener">3 Hz vs 10 Hz flicker phenomena</a>: vivid simple visuals, strongest at 10 Hz.</li>
+      <li><a href="https://link.springer.com/article/10.1038/s41598-024-52372-1" target="_blank" rel="noopener">Ganzflicker vs Ganzfeld</a> and <a href="https://www.biorxiv.org/content/10.1101/2023.08.08.552408.full.pdf" target="_blank" rel="noopener">Dreamachine-team comparison</a>: flicker gives tunnels and spirals early, steady light gives slower, cloudier imagery.</li>
+      <li><a href="https://research.universityofgalway.ie/en/publications/fechner-colors-are-induced-by-flickering-monochromatic-light/" target="_blank" rel="noopener">Fechner colors</a>: flickering a single color can make you see other colors, depending on frequency.</li>
+    </ul>
   </div>
 </main>
 
 <div id="stage" hidden>
   <canvas id="cv"></canvas>
-  <div id="hud"><span id="hudL"></span><span id="hudR">tap to stop</span></div>
+  <div id="hud"><span id="hudL"></span><span>tap to stop</span></div>
 </div>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { source:'torch', preset:'relax', color:'white', style:'breath' };
+
+  // ---------- palette ----------
+  const PALETTE = {
+    white:[1,1,1], warm:[1,.9,.75], red:[1,.08,.05], orange:[1,.42,.08], amber:[1,.65,.2], yellow:[1,.92,.25],
+    green:[.25,1,.35], cyan:[.2,.95,1], teal:[.1,.75,.65], blue:[.15,.35,1], violet:[.6,.35,1], magenta:[1,.2,.85], pink:[1,.55,.7], black:[0,0,0]
+  };
+  const css = c => `rgb(${c.map(v=>Math.round(v*255)).join(',')})`;
+
+  // ---------- defaults & presets ----------
+  const BASE = { source:'screen', mode:'flicker', hz:10, rhythm:'steady', hzEnd:6, jitter:40, wave:'sharp', duty:50, bright:100, breath:'off',
+    colorMode:'fixed', cycleSec:60, colorA:'warm', colorB:'black', layout:'full', tone:'pulse', toneVol:30, noise:'off', noiseVol:25, guide:'off', dur:8 };
+  const P = (o) => Object.assign({}, BASE, o);
+  const PRESETS = [
+    { cat:'Patterns', name:'Peak Patterns', meta:'10 Hz · sharp · white', d:'The setting that produced the strongest geometric patterns and motion in research.', c:P({hz:10,colorA:'white'}) },
+    { cat:'Patterns', name:'Alpha Drift', meta:'~10 Hz drifting · soft violet', d:'Wanders slightly around 10 Hz so the patterns keep shifting.', c:P({rhythm:'drift',wave:'soft',colorA:'violet',breath:'46'}) },
+    { cat:'Patterns', name:'Tunnel Rush', meta:'12 → 9 Hz sweep · white', d:'Starts fast and settles. Good for tunnels and spirals.', c:P({hz:12,rhythm:'sweep',hzEnd:9,colorA:'white',dur:10}) },
+    { cat:'Patterns', name:'Fine Grain 18', meta:'18 Hz · sharp · cyan', d:'Faster, finer flicker. Tested at 18 Hz; usually weaker than 10 Hz but feels different.', c:P({hz:18,colorA:'cyan'}) },
+    { cat:'Patterns', name:'Slow Pulse 3', meta:'3 Hz · soft · amber', d:'Big slow waves of light. Fewer patterns, more of a pulsing glow.', c:P({hz:3,wave:'soft',colorA:'amber'}) },
+    { cat:'Color', name:'Fechner Colors', meta:'single green · 4 → 14 Hz', d:'Flickering one color can make you see others. Sweeps through frequencies to find where yours appear.', c:P({hz:4,rhythm:'sweep',hzEnd:14,colorA:'green',dur:10}) },
+    { cat:'Color', name:'Color Tide', meta:'9 Hz · magenta ⇄ teal', d:'Each flash alternates two colors instead of going dark.', c:P({hz:9,colorMode:'alternate',colorA:'magenta',colorB:'teal'}) },
+    { cat:'Color', name:'Rainbow Cycle', meta:'10 Hz · hue cycle 60 s', d:'The light slowly travels through the whole spectrum.', c:P({colorMode:'cycle',cycleSec:60,wave:'soft'}) },
+    { cat:'Color', name:'Ember Drift', meta:'8 Hz · red → amber drift', d:'Warm, low colors that slowly shift into each other.', c:P({hz:8,colorMode:'drift',colorA:'red',colorB:'amber',cycleSec:90,wave:'soft',breath:'55'}) },
+    { cat:'Space', name:'Hemisphere Split', meta:'10 Hz · left/right opposite', d:'Left and right halves flash out of step. Hold close, centered between your eyes.', c:P({layout:'split',colorA:'white'}) },
+    { cat:'Space', name:'Halo Ring', meta:'8 Hz · center vs ring', d:'The center and outer ring alternate.', c:P({hz:8,layout:'ring',colorA:'violet'}) },
+    { cat:'Space', name:'Ripple Bands', meta:'10 Hz · rippling bands', d:'Vertical bands flash in a travelling wave across the screen. Best on a laptop.', c:P({layout:'bands',colorA:'cyan'}) },
+    { cat:'Deep', name:'Theta Dream', meta:'10 → 6 Hz · amber · 15 min', d:'Complex imagery tends to show up later, around 8–9 minutes. Slows into a dreamier range.', c:P({rhythm:'sweep',hzEnd:6,wave:'soft',colorA:'amber',breath:'478',noise:'brown',guide:'relax',dur:15}) },
+    { cat:'Deep', name:'Ganzfeld Dreamscape', meta:'steady red · pink noise · 20 min', d:'No flashing. Steady light plus noise; imagery builds slowly and lasts longer, more cloud-like.', c:P({mode:'ganzfeld',colorA:'red',bright:55,tone:'off',noise:'pink',noiseVol:40,dur:20,guide:'observe'}) },
+    { cat:'Deep', name:'Binaural Alpha', meta:'10 Hz soft blue · binaural', d:'Light and a binaural beat at the same rate. Needs headphones.', c:P({wave:'soft',colorA:'blue',tone:'binaural',toneVol:35,dur:12}) },
+    { cat:'Mind', name:'Intention', meta:'10 → 7 Hz · guided', d:'A voice guides you to picture your intention and your first step.', c:P({rhythm:'sweep',hzEnd:7,wave:'soft',colorA:'violet',breath:'46',guide:'intent',dur:10}) },
+    { cat:'Mind', name:'Wind Down', meta:'10 → 4 Hz · amber · brown noise', d:'Slows toward the end, for before sleep.', c:P({rhythm:'sweep',hzEnd:4,wave:'soft',colorA:'amber',breath:'478',noise:'brown',tone:'drone',guide:'relax',dur:15}) },
+    { cat:'Mind', name:'Calm Glow', meta:'irregular 10 Hz · warm', d:'Irregular flicker strongly reduces patterns. Use it for light and calm without visuals.', c:P({rhythm:'arrhythmic',jitter:50,wave:'soft',breath:'55',colorA:'warm',noise:'pink'}) },
+    { cat:'Eyes open', name:'Ganzflicker Red', meta:'10 Hz red/black · eyes OPEN', d:'The research version: eyes open, at arm\'s length, lower brightness. Look at the center and relax your gaze.', c:P({colorA:'red',bright:40,tone:'off',dur:10}) },
+  ];
+
+  // ---------- state ----------
+  let cfg = { ...BASE, ...PRESETS[0].c }, activeName = PRESETS[0].name;
+  const LS = { get:k => { try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }, set:(k,v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+  let saved = LS.get('fr-saved') || [];
+  const last = LS.get('fr-last'); if(last && last.cfg){ cfg = { ...BASE, ...last.cfg }; activeName = last.name || 'Custom'; }
   try{ $('intent').value = localStorage.getItem('flicker-intent') || ''; }catch(e){}
   $('intent').addEventListener('input', () => { try{ localStorage.setItem('flicker-intent', $('intent').value); }catch(e){} });
 
-  // ---------- UI wiring ----------
-  function seg(id, key){
-    $(id).addEventListener('click', e => {
-      const b = e.target.closest('button'); if(!b) return;
-      state[key] = b.dataset.v;
-      $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
-    });
+  // ---------- library UI ----------
+  let tab = 'All';
+  function allPresets(){ return PRESETS.concat(saved.map(s => ({ cat:'Mine', name:s.name, meta:summary(s.cfg), d:'Your saved session.', c:s.cfg, mine:true }))); }
+  function summary(c){
+    if(c.mode === 'ganzfeld') return `steady ${c.colorA} · ${c.dur} min`;
+    const hz = c.rhythm === 'sweep' ? `${c.hz} → ${c.hzEnd} Hz` : `${c.hz} Hz ${c.rhythm === 'steady' ? '' : c.rhythm}`;
+    return `${hz} · ${c.wave} · ${c.colorA}`;
   }
-  seg('sourceSeg','source'); seg('presetSeg','preset'); seg('colorSeg','color'); seg('styleSeg','style');
-  $('bright').oninput = () => $('brightVal').textContent = $('bright').value + '%';
-  $('dur').oninput = () => $('durVal').textContent = $('dur').value + ' min';
-  $('vol').oninput = () => { $('volVal').textContent = $('vol').value + '%'; if(audio) audio.master.gain.value = vol(); };
+  function drawTabs(){
+    const cats = ['All', ...new Set(allPresets().map(p => p.cat))];
+    $('tabs').innerHTML = cats.map(c => `<button type="button" aria-pressed="${c===tab}" data-c="${c}">${c}</button>`).join('');
+  }
+  function drawLib(){
+    const list = allPresets().filter(p => tab === 'All' || p.cat === tab);
+    $('lib').innerHTML = list.map((p, i) => {
+      const a = PALETTE[p.c.colorA], b = p.c.colorMode === 'cycle' ? 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' : `linear-gradient(135deg,${css(a)} 50%,${css(PALETTE[p.c.colorB])} 50%)`;
+      const bg = (p.c.colorMode === 'alternate' || p.c.colorMode === 'drift' || p.c.colorMode === 'cycle') ? b : css(a);
+      return `<button type="button" class="card" data-n="${encodeURIComponent(p.name)}" aria-pressed="${p.name===activeName}">
+        <span class="top"><span class="swatch" style="background:${bg}"></span><b>${p.name.replace(/</g,'&lt;')}</b></span>
+        <span class="meta">${p.meta.replace(/</g,'&lt;')}</span><span class="d">${p.d}</span></button>`;
+    }).join('');
+  }
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; tab = b.dataset.c; drawTabs(); drawLib(); });
+  $('lib').addEventListener('click', e => {
+    const b = e.target.closest('.card'); if(!b) return;
+    const p = allPresets().find(x => x.name === decodeURIComponent(b.dataset.n)); if(!p) return;
+    cfg = { ...BASE, ...p.c }; activeName = p.name; syncControls(); drawLib(); remember();
+  });
+
+  // ---------- lab controls ----------
+  const SELECTS = ['source','mode','rhythm','wave','breath','colorMode','layout','tone','noise','guide'];
+  const RANGES = { hz:v=>v+' Hz', hzEnd:v=>v+' Hz', jitter:v=>v+'%', duty:v=>v+'%', bright:v=>v+'%', cycleSec:v=>v+' s', toneVol:v=>v+'%', noiseVol:v=>v+'%', dur:v=>v+' min' };
+  function swatches(id, key){
+    $(id).innerHTML = Object.keys(PALETTE).filter(k => key === 'colorB' || k !== 'black').map(k =>
+      `<button type="button" data-k="${k}" aria-label="${k}" title="${k}" style="background:${css(PALETTE[k])};${k==='black'?'box-shadow:inset 0 0 0 1px var(--line)':''}"></button>`).join('');
+    $(id).addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; cfg[key] = b.dataset.k; custom(); });
+  }
+  swatches('colorA','colorA'); swatches('colorB','colorB');
+  SELECTS.forEach(k => $(k).addEventListener('change', () => { cfg[k] = $(k).value; custom(); }));
+  Object.keys(RANGES).forEach(k => $(k).addEventListener('input', () => { cfg[k] = +$(k).value; custom(); }));
+  function custom(){ activeName = 'Custom'; syncControls(); drawLib(); remember(); }
+  function remember(){ LS.set('fr-last', { name:activeName, cfg }); }
+  function syncControls(){
+    SELECTS.forEach(k => $(k).value = cfg[k]);
+    Object.entries(RANGES).forEach(([k,f]) => { $(k).value = cfg[k]; $(k+'V').textContent = f(cfg[k]); });
+    ['colorA','colorB'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === cfg[id])));
+    $('hzEndF').hidden = cfg.rhythm !== 'sweep';
+    $('jitF').hidden = cfg.rhythm !== 'arrhythmic';
+    $('cycF').hidden = !(cfg.colorMode === 'cycle' || cfg.colorMode === 'drift');
+    $('colBF').hidden = !(cfg.colorMode === 'alternate' || cfg.colorMode === 'drift' || cfg.colorMode === 'fixed');
+    $('start').textContent = `Start: ${activeName}`;
+  }
+  // how many distinct setups the lab can make
+  (function(){
+    let n = 1;
+    SELECTS.forEach(k => n *= $(k).options.length);
+    Object.keys(RANGES).forEach(k => { const e = $(k); n *= Math.round((e.max - e.min) / e.step) + 1; });
+    n *= 13 * 14;
+    const s = n >= 1e12 ? (n/1e12).toFixed(0)+' trillion' : n >= 1e9 ? (n/1e9).toFixed(0)+' billion' : n.toLocaleString();
+    $('count').textContent = `${s} possible combinations`;
+  })();
+  $('save').onclick = () => {
+    const name = $('saveName').value.trim() || `My session ${saved.length + 1}`;
+    saved = saved.filter(s => s.name !== name).concat([{ name, cfg:{ ...cfg } }]); LS.set('fr-saved', saved);
+    activeName = name; $('saveName').value = ''; tab = 'Mine'; drawTabs(); drawLib(); syncControls();
+    status(`Saved "${name}" to My sessions.`);
+  };
+  $('random').onclick = () => {
+    const pick = a => a[Math.floor(Math.random() * a.length)];
+    const cols = Object.keys(PALETTE).filter(k => k !== 'black');
+    cfg = P({
+      hz: pick([6,7,8,8.5,9,9.5,10,10,10,10.5,11,12,14]), rhythm: pick(['steady','steady','drift','sweep','wave']), hzEnd: pick([5,6,7,8,9]),
+      wave: pick(['sharp','sharp','soft','sine']), duty: pick([30,40,50,50,60]), breath: pick(['off','46','55','478','box']),
+      colorMode: pick(['fixed','fixed','alternate','cycle','drift']), colorA: pick(cols), colorB: pick(cols.concat(['black','black'])), cycleSec: pick([30,60,90,120]),
+      layout: pick(['full','full','full','split','ring','bands']), tone: pick(['pulse','binaural','drone','off']), noise: pick(['off','pink','brown']),
+      guide: pick(['off','off','observe','relax']), dur: pick([8,10,12,15]) });
+    activeName = 'Surprise'; syncControls(); drawLib(); remember();
+    status(`Surprise: ${summary(cfg)}`);
+  };
   $('ack').onchange = () => $('start').disabled = !$('ack').checked;
   const status = (msg, err) => { $('status').textContent = msg; $('status').className = err ? 'err' : ''; };
 
-  // ---------- session frequency curves ----------
-  // returns target Hz at progress p (0..1) and elapsed seconds t
-  const curves = {
-    relax:   (p) => 12 - 4 * Math.min(1, p / 0.4),
-    explore: (p, t) => 10 + 1.5 * Math.sin(t / 22) + 0.8 * Math.sin(t / 7.3),
-    sleep:   (p) => 10 - 6 * p,
-    intent:  (p) => p < 0.5 ? 10 - 3 * (p / 0.5) : 7 + 0.3 * Math.sin(p * 40),
-  };
-  const FADE_IN = 20, FADE_OUT = 15; // seconds
+  // ---------- device check (phone frame-rate limits) ----------
+  let fps = 60;
+  (function measure(){
+    let n = 0, t0 = 0;
+    const f = t => { if(!t0) t0 = t; n++; if(t - t0 < 1000) requestAnimationFrame(f); else {
+      fps = Math.round(n * 1000 / (t - t0)); const d = $('device');
+      if(fps < 45){ d.className = 'warn'; d.textContent = `Your screen is running at ${fps} fps. On iPhone this usually means Low Power Mode is on, which makes the flicker uneven. Turn it off in Settings → Battery for smooth timing.`; }
+      else { d.className = 'good'; d.textContent = `Screen check: ${fps} fps. Flicker timing will be smooth up to about ${Math.floor(fps / 4)} Hz.`; }
+    }};
+    requestAnimationFrame(f);
+  })();
 
-  // ---------- light color (screen mode) ----------
-  const COLORS = { white:[1,.96,.9], amber:[1,.62,.22], violet:[.62,.38,1] };
-  function hsl(h){ // h 0..1 -> rgb 0..1, full saturation, soft
-    const f = n => { const k = (n + h * 12) % 12; return .55 - .45 * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
-    return [f(0), f(8), f(4)];
+  // ---------- frequency over time ----------
+  const FADE_IN = 20, FADE_OUT = 15;
+  function hzAt(t, total){
+    const p = t / total, c = cfg;
+    switch(c.rhythm){
+      case 'drift': return c.hz + 1.2 * Math.sin(t / 20) + 0.6 * Math.sin(t / 7.3);
+      case 'sweep': return c.hz + (c.hzEnd - c.hz) * Math.min(1, p / 0.85);
+      case 'wave': return c.hz + 2.5 * Math.sin(2 * Math.PI * t / 120);
+      default: return c.hz;
+    }
   }
-  const colorAt = t => state.color === 'shift' ? hsl((t / 90) % 1) : COLORS[state.color];
-
-  // ---------- spoken guide ----------
-  // at = fraction of session; i = needs an intention (alt used when none written)
-  const SCRIPT = [
-    { at:0.00, s:'Close your eyes and hold the light a few inches from your face. Breathe in slowly, and out.' },
-    { at:0.06, s:'You don\'t need to try to see anything. Let the colors and shapes come by themselves.' },
-    { at:0.16, s:'Your intention for this session is. {i}. Hold it lightly, like a word on the tip of your tongue.', alt:'Think of one thing you want in your life right now. Hold it lightly.' },
-    { at:0.30, s:'Picture the moment it is already true. Where are you? What do you see around you? Who is there with you?' },
-    { at:0.44, s:'Notice how it feels in your body to have it. Let that feeling grow a little with each breath.' },
-    { at:0.58, s:'Now see yourself taking the first real step toward it. What exactly are you doing, and when?' },
-    { at:0.72, s:'Let go of the details. Stay with the light, and let any images come and go.' },
-    { at:0.88, s:'Start to come back. Choose one action you will take today toward {i}.', alt:'Start to come back. Choose one small action you will take today.' },
-  ];
-  const guide = { on:false, next:0, voice:null };
-  function pickVoice(){
-    try{
-      const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
-      guide.voice = vs.find(v => /Samantha|Ava|Karen|Daniel|Serena|Google US/i.test(v.name)) || vs[0] || null;
-    }catch(e){}
+  const envelope = (t, total) => Math.max(0, Math.min(1, t / FADE_IN, (total - t) / FADE_OUT));
+  function breathAt(t){
+    const pat = { '46':[4,0,6,0], '478':[4,7,8,0], 'box':[4,4,4,4], '55':[5,0,5,0] }[cfg.breath];
+    if(!pat) return 1;
+    const L = pat.reduce((a,b) => a + b, 0); let x = t % L, u;
+    if(x < pat[0]) u = x / pat[0];
+    else if((x -= pat[0]) < pat[1]) u = 1;
+    else if((x -= pat[1]) < pat[2]) u = 1 - x / pat[2];
+    else u = 0;
+    return 0.4 + 0.6 * (0.5 - 0.5 * Math.cos(Math.PI * u));
   }
-  if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-  function say(text){
-    if(!('speechSynthesis' in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    if(guide.voice) u.voice = guide.voice;
-    u.rate = 0.82; u.pitch = 0.95; u.volume = 1;
-    // duck the pulse tone while the guide talks
-    u.onstart = () => { if(audio) audio.master.gain.setTargetAtTime(vol() * 0.3, audio.ctx.currentTime, 0.2); };
-    u.onend = () => { if(audio) audio.master.gain.setTargetAtTime(vol(), audio.ctx.currentTime, 0.4); };
-    speechSynthesis.speak(u);
+  // light level 0..1 at a point in the flash cycle
+  function level(phase){
+    phase = ((phase % 1) + 1) % 1;
+    const d = cfg.duty / 100;
+    if(cfg.wave === 'sine') return 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+    if(cfg.wave === 'soft') return phase < d ? Math.sin(Math.PI * phase / d) : 0;
+    return phase < d ? 1 : 0;
   }
-  function guideTick(t, total){
-    if(!guide.on) return;
-    const intent = $('intent').value.trim().replace(/[.!?]+$/, '');
-    while(guide.next < SCRIPT.length && t / total >= SCRIPT[guide.next].at){
-      const line = SCRIPT[guide.next++];
-      say(line.s.includes('{i}') ? (intent ? line.s.replaceAll('{i}', intent) : line.alt) : line.s);
+  function hue(h){ const f = n => { const k = (n + h * 12) % 12; return .5 - .5 * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return [f(0), f(8), f(4)]; }
+  const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+  // color while lit and while dark
+  function colorsAt(t){
+    const A = PALETTE[cfg.colorA], B = PALETTE[cfg.colorB];
+    switch(cfg.colorMode){
+      case 'alternate': return [A, B];
+      case 'cycle': return [hue((t / cfg.cycleSec) % 1), [0,0,0]];
+      case 'drift': return [mix(A, B, 0.5 - 0.5 * Math.cos(2 * Math.PI * t / cfg.cycleSec)), [0,0,0]];
+      default: return [A, B === PALETTE.black ? [0,0,0] : mix([0,0,0], B, .35)];
     }
   }
 
-  // ---------- audio: isochronic pulse synced to the light ----------
+  // ---------- audio ----------
   let audio = null;
-  const vol = () => ($('vol').value / 100) * 0.25;
+  const tv = () => (cfg.toneVol / 100) * 0.25, nv = () => (cfg.noiseVol / 100) * 0.35;
+  function noiseBuffer(ctx, kind){
+    const len = ctx.sampleRate * 4, buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for(let ch = 0; ch < 2; ch++){
+      const d = buf.getChannelData(ch); let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,last=0;
+      for(let i = 0; i < len; i++){
+        const w = Math.random() * 2 - 1;
+        if(kind === 'white') d[i] = w * 0.5;
+        else if(kind === 'brown'){ last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+        else { b0=.99886*b0+w*.0555179; b1=.99332*b1+w*.0750759; b2=.969*b2+w*.153852; b3=.8665*b3+w*.3104856; b4=.55*b4+w*.5329522; b5=-.7616*b5-w*.016898; d[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11; b6=w*.115926; }
+      }
+    }
+    return buf;
+  }
   function startAudio(){
     try{
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const master = ctx.createGain(); master.gain.value = vol(); master.connect(ctx.destination);
-      const pulse = ctx.createGain(); pulse.gain.value = 0; pulse.connect(master);
-      const o1 = ctx.createOscillator(); o1.frequency.value = 174; o1.type = 'sine';
-      const o2 = ctx.createOscillator(); o2.frequency.value = 261.6; o2.type = 'sine';
-      const g2 = ctx.createGain(); g2.gain.value = 0.35;
-      o1.connect(pulse); o2.connect(g2).connect(pulse); o1.start(); o2.start();
-      audio = { ctx, master, pulse, stop(){ try{ o1.stop(); o2.stop(); ctx.close(); }catch(e){} } };
+      const out = ctx.createGain(); out.gain.value = 1; out.connect(ctx.destination);
+      const a = { ctx, out, nodes:[], pulse:null, right:null };
+      if(cfg.tone !== 'off'){
+        const tg = ctx.createGain(); tg.gain.value = tv(); tg.connect(out); a.toneGain = tg;
+        if(cfg.tone === 'binaural'){
+          const m = ctx.createChannelMerger(2); m.connect(tg);
+          const L = ctx.createOscillator(), R = ctx.createOscillator(); L.frequency.value = 200; R.frequency.value = 200 + cfg.hz;
+          L.connect(m, 0, 0); R.connect(m, 0, 1); L.start(); R.start(); a.nodes.push(L, R); a.right = R;
+        } else {
+          const g = ctx.createGain(); g.gain.value = cfg.tone === 'drone' ? 1 : 0; g.connect(tg); a.pulse = cfg.tone === 'pulse' ? g : null;
+          [[174,1],[261.6,.35],[87,.5]].forEach(([f, v]) => { const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.value = f; og.gain.value = v; o.connect(og).connect(g); o.start(); a.nodes.push(o); });
+        }
+      }
+      if(cfg.noise !== 'off'){
+        const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx, cfg.noise); src.loop = true;
+        const ng = ctx.createGain(); ng.gain.value = 0; ng.gain.setTargetAtTime(nv(), ctx.currentTime, 3);
+        src.connect(ng).connect(out); src.start(); a.nodes.push(src);
+      }
+      a.stop = () => { a.nodes.forEach(n => { try{ n.stop(); }catch(e){} }); try{ ctx.close(); }catch(e){} };
+      audio = a;
     }catch(e){ audio = null; }
   }
-  function audioPulse(on, level){
+  function audioTick(on, env, hz){
     if(!audio) return;
-    const g = audio.pulse.gain, t = audio.ctx.currentTime;
-    g.cancelScheduledValues(t); g.setTargetAtTime(on ? level : 0, t, 0.006);
+    const t = audio.ctx.currentTime;
+    if(audio.pulse){ audio.pulse.gain.cancelScheduledValues(t); audio.pulse.gain.setTargetAtTime(on ? env : 0, t, 0.006); }
+    if(audio.right) audio.right.frequency.setTargetAtTime(200 + hz, t, 0.1);
+  }
+  const duck = on => { if(audio && audio.toneGain) audio.toneGain.gain.setTargetAtTime(on ? tv() * 0.3 : tv(), audio.ctx.currentTime, 0.3); };
+
+  // ---------- spoken guides ----------
+  const SCRIPTS = {
+    relax:[
+      { at:0.00, s:'Close your eyes. Let your shoulders drop. Breathe in slowly, and out.' },
+      { at:0.10, s:'Let the light wash over you. There is nothing to do and nothing to get right.' },
+      { at:0.30, s:'Notice your jaw, your forehead, the space between your eyes. Let them soften.' },
+      { at:0.55, s:'If thoughts come, let them pass like the shapes in the light.' },
+      { at:0.85, s:'Slowly start to come back. Notice the weight of your body.' } ],
+    observe:[
+      { at:0.00, s:'Close your eyes and relax your gaze behind your eyelids.' },
+      { at:0.08, s:'Don\'t search for anything. Just notice colors, shapes, and movement as they come.' },
+      { at:0.35, s:'If a pattern appears, stay with it without trying to hold it.' },
+      { at:0.60, s:'Images may become more complex now. Let them unfold on their own.' },
+      { at:0.88, s:'Begin to come back. Remember one image you saw.' } ],
+    intent:[
+      { at:0.00, s:'Close your eyes and hold the light a few inches from your face. Breathe in slowly, and out.' },
+      { at:0.06, s:'You don\'t need to try to see anything. Let the colors and shapes come by themselves.' },
+      { at:0.16, s:'Your intention for this session is. {i}. Hold it lightly.', alt:'Think of one thing you want in your life right now. Hold it lightly.' },
+      { at:0.30, s:'Picture the moment it is already true. Where are you? What do you see around you? Who is there?' },
+      { at:0.44, s:'Notice how it feels in your body to have it. Let that feeling grow with each breath.' },
+      { at:0.58, s:'Now see yourself taking the first real step toward it. What exactly are you doing, and when?' },
+      { at:0.72, s:'Let go of the details. Stay with the light and let images come and go.' },
+      { at:0.88, s:'Start to come back. Choose one action you will take today toward {i}.', alt:'Start to come back. Choose one small action you will take today.' } ],
+  };
+  const guide = { list:null, next:0, voice:null };
+  function pickVoice(){ try{ const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); guide.voice = vs.find(v => /Samantha|Ava|Karen|Daniel|Serena|Google US/i.test(v.name)) || vs[0] || null; }catch(e){} }
+  if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function say(text){
+    if(!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text); if(guide.voice) u.voice = guide.voice;
+    u.rate = 0.82; u.pitch = 0.95; u.onstart = () => duck(true); u.onend = () => duck(false);
+    speechSynthesis.speak(u);
+  }
+  function guideTick(t, total){
+    if(!guide.list) return;
+    const intent = $('intent').value.trim().replace(/[.!?]+$/, '');
+    while(guide.next < guide.list.length && t / total >= guide.list[guide.next].at){
+      const l = guide.list[guide.next++];
+      say(l.s.includes('{i}') ? (intent ? l.s.replaceAll('{i}', intent) : l.alt) : l.s);
+    }
   }
 
-  // ---------- shared session clock ----------
+  // ---------- screen renderer ----------
   let run = null;
-  function envelope(t, total){
-    return Math.max(0, Math.min(1, t / FADE_IN, (total - t) / FADE_OUT));
-  }
-
-  // ---------- screen mode ----------
   function runScreen(r){
-    const cv = $('cv'), cx = cv.getContext('2d');
+    const cv = $('cv'), cx = cv.getContext('2d', { alpha:false });
     const fit = () => { cv.width = innerWidth; cv.height = innerHeight; };
     fit(); addEventListener('resize', fit); r.cleanup.push(() => removeEventListener('resize', fit));
-    let phase = 0, last = performance.now(), flips = 0, lastOn = false, rateT = performance.now(), measured = 0;
+    let phase = 0, last = performance.now(), cycleHz = cfg.hz, flips = 0, rateT = last, measured = 0, wasOn = false;
+    const paint = (x, y, w, h, lv, cols, k) => {
+      const c = mix(cols[1], cols[0], lv);
+      cx.fillStyle = `rgb(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)})`; cx.fillRect(x, y, w, h);
+    };
     const frame = now => {
       if(r.stopped) return;
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
       const t = (now - r.t0) / 1000;
       if(t >= r.total){ stop('Session complete.'); return; }
-      const hz = curves[state.preset](t / r.total, t);
-      phase = (phase + hz * dt) % 1;
-      const env = envelope(t, r.total);
-      // flash shape: sharp = square wave, soft = smooth sine; breathing adds a slow swell
-      const wave = state.style === 'soft' ? 0.5 - 0.5 * Math.cos(2 * Math.PI * phase) : (phase < 0.5 ? 1 : 0);
-      const on = wave > 0.5;
-      // breathing: 4 s in (brighter), 6 s out (dimmer), never fully dark so the flicker keeps working
-      let breath = 1;
-      if(state.style === 'breath'){ const b = t % 10, u = b < 4 ? b / 4 : 1 - (b - 4) / 6; breath = 0.4 + 0.6 * (0.5 - 0.5 * Math.cos(Math.PI * u)); }
-      const v = 255 * wave * ($('bright').value / 100) * (0.25 + 0.75 * env) * breath, c = colorAt(t);
-      cx.fillStyle = `rgb(${Math.round(v*c[0])},${Math.round(v*c[1])},${Math.round(v*c[2])})`;
+      const env = envelope(t, r.total), k = 255 * (cfg.bright / 100) * (0.25 + 0.75 * env) * breathAt(t), cols = colorsAt(t), W = cv.width, H = cv.height;
       guideTick(t, r.total);
-      cx.fillRect(0, 0, cv.width, cv.height);
-      if(on !== lastOn){ if(on) flips++; audioPulse(on, env); lastOn = on; }
+      if(cfg.mode === 'ganzfeld'){
+        paint(0, 0, W, H, 1, [cols[0], cols[0]], k * (0.92 + 0.08 * Math.sin(t / 9)));
+        hud(0, 0, t, r.total); requestAnimationFrame(frame); return;
+      }
+      const target = hzAt(t, r.total);
+      if(cfg.rhythm !== 'arrhythmic') cycleHz = target;
+      phase += cycleHz * dt;
+      if(phase >= 1){ phase %= 1; flips++; if(cfg.rhythm === 'arrhythmic') cycleHz = target * (1 + (cfg.jitter / 100) * (Math.random() * 2 - 1)); }
+      const lv = level(phase), on = lv > 0.5;
+      if(cfg.layout === 'split'){ paint(0, 0, W/2, H, lv, cols, k); paint(W/2, 0, W - W/2, H, level(phase + .5), cols, k); }
+      else if(cfg.layout === 'ring' || cfg.layout === 'center'){
+        paint(0, 0, W, H, cfg.layout === 'ring' ? level(phase + .5) : 0, cols, cfg.layout === 'ring' ? k : 0);
+        const c = mix(cols[1], cols[0], lv); cx.fillStyle = `rgb(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)})`;
+        cx.beginPath(); cx.arc(W/2, H/2, Math.min(W, H) * .32, 0, Math.PI * 2); cx.fill();
+      } else if(cfg.layout === 'bands'){
+        const n = 6, bw = Math.ceil(W / n); for(let i = 0; i < n; i++) paint(i * bw, 0, bw, H, level(phase - i / n), cols, k);
+      } else paint(0, 0, W, H, lv, cols, k);
+      if(on !== wasOn){ audioTick(on, env, target); wasOn = on; }
       if(now - rateT > 2000){ measured = flips / ((now - rateT) / 1000); flips = 0; rateT = now; }
-      hud(hz, measured, t, r.total);
+      hud(target, measured, t, r.total);
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
   }
 
-  // ---------- torch mode ----------
+  // ---------- flashlight ----------
   async function openTorch(){
     if(!navigator.mediaDevices?.getUserMedia) throw new Error('This browser has no camera access. Open the page over HTTPS in Safari.');
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
     const track = stream.getVideoTracks()[0];
-    // capabilities often only appear once the camera is running
     await new Promise(res => setTimeout(res, 400));
     const caps = track.getCapabilities ? track.getCapabilities() : {};
-    if(!caps.torch){
-      stream.getTracks().forEach(t => t.stop());
-      throw new Error('Flashlight control isn\'t available here (needs iOS 18+ Safari or Android Chrome). Use Screen mode.');
-    }
+    if(!caps.torch){ stream.getTracks().forEach(t => t.stop()); throw new Error('Flashlight control isn\'t available here (needs iOS 18+ Safari or Android Chrome). Use Screen.'); }
     return { stream, track };
   }
-  async function setTorch(track, on){
-    await track.applyConstraints({ advanced: [{ torch: on }] });
-  }
+  const setTorch = (track, on) => track.applyConstraints({ advanced: [{ torch: on }] });
   async function runTorch(r, cam){
     r.cleanup.push(() => { setTorch(cam.track, false).catch(()=>{}); cam.stream.getTracks().forEach(t => t.stop()); });
-    // screen stays black so it doesn't add its own light
-    const cv = $('cv'), cx = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
-    cx.fillStyle = '#000'; cx.fillRect(0,0,cv.width,cv.height);
+    const cv = $('cv'), cx = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight; cx.fillStyle = '#000'; cx.fillRect(0,0,cv.width,cv.height);
     let cycles = 0, rateT = performance.now(), measured = 0, next = performance.now();
     const sleep = ms => new Promise(res => setTimeout(res, Math.max(0, ms)));
     while(!r.stopped){
       const now = performance.now(), t = (now - r.t0) / 1000;
       if(t >= r.total){ stop('Session complete.'); return; }
-      const hz = curves[state.preset](t / r.total, t), half = 500 / hz, env = envelope(t, r.total);
-      // during fade-in, shorten the on-phase instead of dimming (the torch has no brightness control on iOS)
-      const onMs = half * (0.3 + 0.7 * env), offMs = 2 * half - onMs;
-      next = Math.max(next, now);
-      guideTick(t, r.total);
-      await setTorch(cam.track, true); audioPulse(true, env);
-      next += onMs; await sleep(next - performance.now());
-      if(r.stopped) break;
-      await setTorch(cam.track, false); audioPulse(false, env);
-      next += offMs; await sleep(next - performance.now());
-      cycles++;
-      const n = performance.now();
+      let hz = hzAt(t, r.total); if(cfg.rhythm === 'arrhythmic') hz *= 1 + (cfg.jitter / 100) * (Math.random() * 2 - 1);
+      const period = 1000 / hz, onMs = period * (cfg.duty / 100), env = envelope(t, r.total);
+      next = Math.max(next, now); guideTick(t, r.total);
+      await setTorch(cam.track, true); audioTick(true, env, hz);
+      next += onMs; await sleep(next - performance.now()); if(r.stopped) break;
+      await setTorch(cam.track, false); audioTick(false, env, hz);
+      next += period - onMs; await sleep(next - performance.now());
+      cycles++; const n = performance.now();
       if(n - rateT > 2000){ measured = cycles / ((n - rateT) / 1000); cycles = 0; rateT = n; }
       hud(hz, measured, t, r.total);
     }
   }
 
-  // ---------- HUD ----------
-  let hudTimer;
   function hud(hz, measured, t, total){
     const left = Math.max(0, total - t), m = Math.floor(left / 60), s = Math.floor(left % 60);
-    $('hudL').textContent = `target ${hz.toFixed(1)} Hz · actual ${measured ? measured.toFixed(1) : '—'} Hz · ${m}:${String(s).padStart(2,'0')}`;
+    const rate = cfg.mode === 'ganzfeld' ? 'steady light' : `${hz.toFixed(1)} Hz · actual ${measured ? measured.toFixed(1) : '—'}`;
+    $('hudL').textContent = `${activeName} · ${rate} · ${m}:${String(s).padStart(2,'0')}`;
   }
 
   // ---------- start / stop ----------
   async function start(){
     status('');
-    const total = +$('dur').value * 60;
-    guide.on = $('guide').checked && 'speechSynthesis' in window;
-    guide.next = 0;
-    // iOS only allows speech that starts inside a tap, so unlock it now
-    if(guide.on){ try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){} }
+    const total = cfg.dur * 60;
+    guide.list = cfg.guide !== 'off' && 'speechSynthesis' in window ? SCRIPTS[cfg.guide] : null; guide.next = 0;
+    if(guide.list){ try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){} }
     let cam = null;
-    if(state.source === 'torch'){
+    const torch = cfg.source === 'torch' && cfg.mode === 'flicker';
+    if(torch){
       status('Asking for camera access to control the flashlight…');
       try{ cam = await openTorch(); }
-      catch(e){ status(e.name === 'NotAllowedError' ? 'Camera permission was denied. Allow it in Safari settings, or use Screen mode.' : e.message, true); return; }
+      catch(e){ status(e.name === 'NotAllowedError' ? 'Camera permission was denied. Allow it in Safari settings, or choose Screen.' : e.message, true); return; }
     }
     startAudio();
     run = { t0: performance.now(), total, stopped:false, cleanup:[] };
     $('stage').hidden = false;
     try{ document.documentElement.requestFullscreen?.().catch(()=>{}); }catch(e){}
     try{ run.lock = await navigator.wakeLock?.request('screen'); }catch(e){}
-    $('hud').classList.remove('hidden');
-    clearTimeout(hudTimer); hudTimer = setTimeout(() => $('hud').classList.add('hidden'), 6000);
-    status(state.source === 'torch' ? 'Running on the flashlight.' : 'Running on the screen.');
-    if(state.source === 'torch') runTorch(run, cam).catch(e => stop('Flashlight stopped responding: ' + e.message, true));
+    status(`Running ${activeName}.`);
+    if(torch) runTorch(run, cam).catch(e => stop('Flashlight stopped responding: ' + e.message, true));
     else runScreen(run);
   }
   function stop(msg, err){
@@ -369,10 +592,11 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     run.cleanup.forEach(f => { try{ f(); }catch(e){} });
     try{ run.lock?.release(); }catch(e){}
     if(audio){ audio.stop(); audio = null; }
-    if(guide.on){ try{ speechSynthesis.cancel(); }catch(e){} guide.on = false; }
+    if(guide.list){ try{ speechSynthesis.cancel(); }catch(e){} }
     $('stage').hidden = true;
-    if(msg === 'Session complete.' && $('guide').checked) say('Open your eyes when you\'re ready.');
     if(document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
+    if(msg === 'Session complete.' && guide.list) say('Open your eyes when you\'re ready.');
+    guide.list = null;
     status(msg || 'Stopped.', err);
   }
   $('start').onclick = start;
@@ -380,8 +604,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   addEventListener('keydown', e => { if(e.key === 'Escape') stop('Stopped.'); });
   document.addEventListener('visibilitychange', () => { if(document.hidden) stop('Stopped because the page went to the background.'); });
 
-  // reduced motion: default to the gentlest preset
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) $('p-sleep').click();
+  drawTabs(); drawLib(); syncControls();
 })();
 </script>
 </body>
