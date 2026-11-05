@@ -92,6 +92,21 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </section>
 
   <section>
+    <p class="label">Light style (screen mode)</p>
+    <div class="seg" id="styleSeg">
+      <button type="button" id="st-sharp" data-v="sharp" aria-pressed="false"><b>Sharp</b><span>Hard on/off flashes, strongest patterns</span></button>
+      <button type="button" id="st-soft" data-v="soft" aria-pressed="false"><b>Soft</b><span>Each flash fades in and out, easier on the eyes</span></button>
+      <button type="button" id="st-breath" data-v="breath" aria-pressed="true"><b>Breathing</b><span>Flashes swell brighter as you breathe in, dim as you breathe out</span></button>
+    </div>
+  </section>
+
+  <section>
+    <p class="label">Brightness (screen mode)</p>
+    <div class="row"><input id="bright" type="range" min="20" max="100" value="100" step="5"><span class="val" id="brightVal">100%</span></div>
+    <p class="hint">Keep your device at full brightness and set the level here, so the page controls it smoothly. Turn it down if the light feels harsh.</p>
+  </section>
+
+  <section>
     <p class="label">Light color (screen mode)</p>
     <div class="seg seg-sm" id="colorSeg">
       <button type="button" id="c-white" data-v="white" aria-pressed="true"><b>Warm white</b><span>Brightest</span></button>
@@ -137,7 +152,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { source:'torch', preset:'relax', color:'white' };
+  const state = { source:'torch', preset:'relax', color:'white', style:'breath' };
   try{ $('intent').value = localStorage.getItem('flicker-intent') || ''; }catch(e){}
   $('intent').addEventListener('input', () => { try{ localStorage.setItem('flicker-intent', $('intent').value); }catch(e){} });
 
@@ -149,7 +164,8 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
     });
   }
-  seg('sourceSeg','source'); seg('presetSeg','preset'); seg('colorSeg','color');
+  seg('sourceSeg','source'); seg('presetSeg','preset'); seg('colorSeg','color'); seg('styleSeg','style');
+  $('bright').oninput = () => $('brightVal').textContent = $('bright').value + '%';
   $('dur').oninput = () => $('durVal').textContent = $('dur').value + ' min';
   $('vol').oninput = () => { $('volVal').textContent = $('vol').value + '%'; if(audio) audio.master.gain.value = vol(); };
   $('ack').onchange = () => $('start').disabled = !$('ack').checked;
@@ -252,8 +268,14 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       if(t >= r.total){ stop('Session complete.'); return; }
       const hz = curves[state.preset](t / r.total, t);
       phase = (phase + hz * dt) % 1;
-      const on = phase < 0.5, env = envelope(t, r.total);
-      const v = on ? 255 * (0.25 + 0.75 * env) : 0, c = colorAt(t);
+      const env = envelope(t, r.total);
+      // flash shape: sharp = square wave, soft = smooth sine; breathing adds a slow swell
+      const wave = state.style === 'soft' ? 0.5 - 0.5 * Math.cos(2 * Math.PI * phase) : (phase < 0.5 ? 1 : 0);
+      const on = wave > 0.5;
+      // breathing: 4 s in (brighter), 6 s out (dimmer), never fully dark so the flicker keeps working
+      let breath = 1;
+      if(state.style === 'breath'){ const b = t % 10, u = b < 4 ? b / 4 : 1 - (b - 4) / 6; breath = 0.4 + 0.6 * (0.5 - 0.5 * Math.cos(Math.PI * u)); }
+      const v = 255 * wave * ($('bright').value / 100) * (0.25 + 0.75 * env) * breath, c = colorAt(t);
       cx.fillStyle = `rgb(${Math.round(v*c[0])},${Math.round(v*c[1])},${Math.round(v*c[2])})`;
       guideTick(t, r.total);
       cx.fillRect(0, 0, cv.width, cv.height);
